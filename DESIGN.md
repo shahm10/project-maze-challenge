@@ -1,4 +1,4 @@
-### DESIGN.md for Amazing Maze
+# DESIGN.md for Amazing Maze
 ## LEPC (Evan, Sally, Wylie & Jason)
 
-# Pseudocode
+### Pseudocode
