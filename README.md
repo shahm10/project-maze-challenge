@@ -5,7 +5,7 @@
 ## Team Members: Evan Fu, Sally (Seung Hyun) Hahm, Wylie Kasai, Jason Wang
 
 GitHub usernames:
-@
+@j-wang2
 @evansfu
 @wyliekasai
 @shahm10
