@@ -4,7 +4,7 @@
 # Xia Zhou, August 2017
 # Temi Prioleau, 2020
 
-PROGS = AMSTARTUP inserver inserver-fork
+PROGS = AMSTARTUP
 LLIBS = 
 
 FLAGS = # 
@@ -21,18 +21,6 @@ AMSTARTUP: AMSTARTUP.o $(LLIBS)
 	$(CC) $(CFLAGS) $^ -o $@
 
 AMSTARTUP.o: 
-
-########### inserver #################
-inserver: inserver.o $(LLIBS)
-	$(CC) $(CFLAGS) $^ -o $@
-
-inserver.o: 
-
-########### inserver-fork #################
-inserver-fork: inserver-fork.o $(LLIBS)
-	$(CC) $(CFLAGS) $^ -o $@
-
-inserver-fork.o: 
 
 clean:
 	rm -rf *~ *.o *.dSYM
