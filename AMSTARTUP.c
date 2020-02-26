@@ -18,7 +18,7 @@
 #include <unistd.h>	      // read, write, close
 #include <string.h>	      // memcpy, memset
 #include <netdb.h>	      // socket-related structures
-#include <amazing.h>
+#include "amazing.h"
 
 /**************** file-local constants ****************/
 #define BUFSIZE 1024     // read/write buffer size
@@ -29,12 +29,12 @@ main(const int argc, char *argv[])
 {
   char *program;	  // this program's name
   char *hostname;	  // server hostname
-  int port = AM_SERVER_PORT		      // server port
+  int port = atoi(AM_SERVER_PORT);	      // server port
 
   // 0. Check arguments
   program = argv[0];
-  if (argc != 3) {
-    fprintf(stderr, "usage: %s hostname port\n", program);
+  if (argc != 4) {
+    fprintf(stderr, "usage: %s hostname nAvatars difficulty \n", program);
     exit(1);
   } else {
     hostname = argv[1];
