@@ -43,7 +43,7 @@ main(const int argc, char *argv[])
     nAvatars = argv[2];
     difficulty = argv[3];
     port = atoi(AM_SERVER_PORT);// assigned from var in amazing.h
-
+    // am_message
   }
 
   // 1. Create socket
@@ -91,5 +91,14 @@ main(const int argc, char *argv[])
   close(comm_sock);
 
   return 0;
+}
+
+
+
+bool send_AM_INIT(int nAvatars, int difficulty)
+{
+  AM_Message.init.nAvatars = nAvatars;
+  AM_Message.init.Difficulty = difficulty;
+  
 }
 
