@@ -29,7 +29,9 @@ main(const int argc, char *argv[])
 {
   char *program;	  // this program's name
   char *hostname;	  // server hostname
-  int port = atoi(AM_SERVER_PORT);	      // server port
+  int port;
+  int nAvatars;
+  int difficulty;
 
   // 0. Check arguments
   program = argv[0];
@@ -38,7 +40,10 @@ main(const int argc, char *argv[])
     exit(1);
   } else {
     hostname = argv[1];
-    // port = atoi(argv[2]);
+    nAvatars = argv[2];
+    difficulty = argv[3];
+    port = atoi(AM_SERVER_PORT);// assigned from var in amazing.h
+
   }
 
   // 1. Create socket
