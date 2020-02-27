@@ -11,14 +11,17 @@
 
 * `AM_INIT_OK` which means the message was successfully processed. Provides a TCP/IP number that allow Avatars to communicate.
 * `AM_INIT_FAILED` which means the initialize maze message was not processed. The difficult or number of avatars likely exceeds the range.
+* `AM_UNEXPECTED_MSG_TYPE` which means a server has been sent out of order. The server will abort and die during initialization if this is triggered.
+* `AM_SERVER_TIMEOUT` which means the server has waited too long without receiving a message from a client.
+* `AM_SERVER_OUT_OF_MEM` which means the server cannot allocatew enough memory to serve a maze. The server will abort and die.
 
 #### Output: Any outputs of the module
 *AM_INIT  nAvatars	Difficulty* is the initial message sent to the server. This is the first step in starting a new maze game.
 
-The GUI?
+The startup also creates the logfile that will be written into by the avatars and used to produce the GUI.
 
 #### Data Flow: Any data flow through the module
-Input for the parameters from the user are passed onto the server. The server returns a message to the startup client - including the maze port - and startup then initiates Avatar clients. 
+Input for the parameters from the user are passed onto the server. Upon successful initiation, it creates a log file. The server returns a message to the startup client - including the maze port - and startup then initiates Avatar clients. 
 
 #### Data Structures: Major data structures used by the module
 In order to connect with the server, the startup client uses structs from the netdb.h library to make the sockets that connect with the server.
@@ -65,25 +68,24 @@ Receives *MazePort* from *AM_Startup* to connect to on the server.
 
 Receives messages from the server such as:
 * `AM_AVATAR_TURN` which gives the turn order and locations of other avatars.
-* `AM_MAZE_SOLVED`
-* `AM_NO_SUCH_AVATAR` which means the AvatarId passed was invalid.
-* `AM_UNKNOWN_MSG_TYPE`
-* `AM_UNEXPECTED_MSG_TYPE`
-* `AM_AVATAR_OUT_OF_TURN`
-* `AM_TOO_MANY_MOVES`
+* `AM_AVATAR_OUT_OF_TURN` which means the Avatar has tried to move out of turn.
+* `AM_MAZE_SOLVED` which means the maze has been solved.
+* `AM_NO_SUCH_AVATAR` which means the AvatarId passed by any message was invalid.
 
-* `AM_SERVER_TIMEOUT`
-* `AM_SERVER_DISK_QUOTA`
-* `AM_SERVER_OUT_OF_MEM`
-^ Not sure if these three go here.
+* `AM_UNKNOWN_MSG_TYPE` which means the server cannot understand the message sent.
+* `AM_UNEXPECTED_MSG_TYPE` which means a server has been sent out of order.
+* `AM_TOO_MANY_MOVES` which means the number of moves for a given maze has been exceeded.
+* `AM_SERVER_TIMEOUT` which means the server has waited too long without receiving a message from a client.
+* `AM_SERVER_DISK_QUOTA` which means the server cannot create or write a file due to a disk quota error. Avatars may continue to solve the maze, but no log files will be produced.
+* `AM_SERVER_OUT_OF_MEM` which means the server cannot allocatew enough memory to serve a maze. The server will abort and die.
 
 #### Output: Any outputs of the module
 Sends messages to and from the server such as:
-* `AM_AVATAR_READY AvatarID` which lets the server know that Avatar is ready.
-* `AM_AVATAR_MOVE` which informs the server what direction the Avatar wishes to use.
+* `AM_AVATAR_READY` which lets the server know that Avatar is ready and passes *AvatarID*.
+* `AM_AVATAR_MOVE` which informs the server what direction, indicated by integer, the Avatar wishes to move. It may use a NULL move to stay in place.
 
 #### Data Flow: Any data flow through the module
-Uses the locations of other avatars in its algorithm to determine it's next move. Perhaps it chooses the left/right/up/down direction that is most strong. e.g. another avatar higher up than it is to the right would encourage a move up. This would consider all of the other avatars locations, more than just one; essentially just using distance comparison.
+The avatar client is initiated by the startup client and then communicates to the server via the messages laid out in the previous two sections. See *amazing.h* to see every definition and corresponding error codes.
 
 #### Data Structures: Major data structures used by the module
 The Avatar Program Spec uses the data structure `Avatar` as definied by amazing.h. It uses another data structure called `XYPos` that stores the coordinates as 32-bit unsigned integers.
@@ -112,5 +114,5 @@ typedef struct XYPos
     2. Exceed the maximum number of moves (determined by `AM_MAX_MOVES` and Difficulty)
     3. Server's `AM_WAIT_TIME` timer expires
     4. The server determines that all of the Avatars are located at the same (x, y) position
-6. If received, write `AM_MAZE_SOLVED` message is written into log file once. Otherwise, log any success/progress.
+6. If received, write `AM_MAZE_SOLVED` message is written into log file once. Otherwise, log any success/progress after each action/non-action.
 7. Close files, free memory, exit.
