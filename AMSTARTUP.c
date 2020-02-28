@@ -1,8 +1,9 @@
 /* 
- * inclient - an example Internet client.
+ * AMSTARTUP.c 
  *
  * Makes a connection to the given host/port and sends a message 
- * to that socket.
+ * to that socket.  AMStartup will start the N copies of the Avatar 
+ * client (as threads) with the parameters they will need
  * 
  * usage: inclient hostname port
  * 
@@ -18,35 +19,87 @@
 #include <unistd.h>	      // read, write, close
 #include <string.h>	      // memcpy, memset
 #include <netdb.h>	      // socket-related structures
-#include <sys/socket.h>
-#include "amazing.h"
+#include <sys/socket.h>   // Need for socket function
+#include "amazing.h"      // Local includes
+#include <pthread.h>      // create threads
+#include <getopt.h>       // To create options
+#include <ctype.h>  
+#include <string.h>
+#include <netdb.h>         // for ip address
+#include <errno.h>         
 
 /**************** file-local constants ****************/
 #define BUFSIZE 1024     // read/write buffer size
 
+
 /**************** main() ****************/
 int
-main(const int argc, char *argv[])
-{
+main(const int argc, char *argv[]) {
   char *program;	  // this program's name
   char *hostname;	  // server hostname
-  int port;
-  int nAvatars;
+  int port = atoi(AM_SERVER_PORT);// assigned from var in amazing.h  int nAvatars;
   int difficulty;
+  int nAvatars;
+
+  //0. first check if num of argument is valid 
+  // program = argv[0];
+  // if (argc != 4) {
+  //   fprintf(stderr, "usage: %s hostname nAvatars difficulty \n", program);
+  //   exit(1);
+  // }
+
+  /****************** define a struct for options ***************/
+  static struct option long_options[] = {
+    {"nAvatars", required_argument, 0, 'n'},
+    {"difficulty", required_argument, 0, 'd'},
+    {"hostname", required_argument, 0, 'h'},
+    {0,0,0}
+};
+  int opt;
+  while ((opt = getopt_long (argc, argv, "n:d:h:", long_options, 0)) != -1) {
+    switch (opt) {
+      case 'n':
+          for (int i = 0; i < strlen (optarg); i++) {
+            if (!isdigit (optarg[i])) {
+              fprintf (stderr, "nAvatars has to be a number \n");
+              exit (4);
+            }
+          }
+          nAvatars = atoi(optarg);
+          break;
+
+      case 'd':
+          for (int i = 0; i < strlen (optarg); i++) {
+            if (!isdigit (optarg[i])) {
+              fprintf (stderr, "Difficulty must be a number\n");
+              exit (4);
+            }
+          }
+          difficulty = atoi(optarg);
+          break;
+
+      case 'h':
+          hostname = optarg;
+          break;
+      
+      case '?':
+          printf ("error");
+          break;
+
+      default:
+          abort();
+
+    }
+  }
 
   // 0. Check arguments
-  program = argv[0];
-  if (argc != 4) {
-    fprintf(stderr, "usage: %s hostname nAvatars difficulty \n", program);
-    exit(1);
-  } else {
-    hostname = argv[1];
-    nAvatars = atoi(argv[2]);
-    difficulty = atoi(argv[3]);
-    port = atoi(AM_SERVER_PORT);// assigned from var in amazing.h
-    //Need to include check conditions for nAvatars and difficulty to be an ingteger
+  // } else {
+  //   hostname = argv[1];
+  //   nAvatars = atoi(argv[2]);
+  //   difficulty = atoi(argv[3]);
+  //   port = atoi(AM_SERVER_PORT);// assigned from var in amazing.h
+  //   //Need to include check conditions for nAvatars and difficulty to be an ingteger
 
-  }
   if (nAvatars < 1 || nAvatars > AM_MAX_AVATAR) {
     fprintf (stderr, "Avatars should be greater than 1 and less than %d\n", AM_MAX_AVATAR);
     exit (1);
@@ -84,9 +137,6 @@ main(const int argc, char *argv[])
   printf("Connected!\n");
 
   // 4. Read content from stdin (file descriptor = 0) and write to socket
-  // char buf[BUFSIZE];    // a buffer for reading data from stdin
-  // int bytes_read;       // #bytes read from socket
-  // memset(buf, 0, BUFSIZE); // clear up the buffer
   AM_Message msg;
   msg.type = htonl(AM_INIT);
   msg.init.Difficulty = htonl(difficulty);
