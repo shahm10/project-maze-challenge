@@ -21,6 +21,8 @@
 #include <sys/socket.h>
 #include "amazing.h"
 
+#include "avatar.h"
+
 /**************** file-local constants ****************/
 #define BUFSIZE 1024     // read/write buffer size
 
@@ -128,6 +130,7 @@ main(const int argc, char *argv[])
     printf ("%d\n", mazewidth);
     printf ("%d\n", mazeheight);
 
+    avatar_new(0, nAvatars, difficulty, "flume.cs.dartmouth.edu", mazeport, mazeheight, mazewidth, "testing");
   }
 
   if (ntohl (servermsg.type) == AM_INIT_FAILED) {
@@ -137,7 +140,7 @@ main(const int argc, char *argv[])
   
   close(comm_sock);
 
+
   return 0;
 }
-
 
