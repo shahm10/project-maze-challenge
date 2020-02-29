@@ -118,7 +118,7 @@ main(const int argc, char *argv[])
   printf ("Server connected\n");
 
 
-
+  printf("Type: %d \n", servermsg.type);
   if (ntohl (servermsg.type) == AM_INIT_OK) {
     printf ("AM_INIT successfully processed\n");
     int mazeport =  ntohl(servermsg.init_ok.MazePort);
