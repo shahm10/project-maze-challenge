@@ -54,9 +54,7 @@ void main(int AvatarID, int nAvatars, int Difficulty, char* hostname, int MazePo
 
     int start_direction = 0;
     avatar_move(AvatarID, comm_sock, visited_coords, start_direction, destination);
-
-
-
+    
     close(comm_sock);
 
     return 0;
@@ -98,8 +96,10 @@ bool avatar_move(int AvatarID, int comm_sock, counters_t* visited,int direction,
                 XYPos prevPos = currPos;
             }
 
-            currPos =  ntohl(servermsg.avatar_turn.XYPos[AvatarID]);   // get position of self in the maze
+            currPos = ntohl(servermsg.avatar_turn.XYPos[AvatarID]);   // get position of self in the maze
+            counters_set(currPos.x, currPos.y);
 
+            XYPos nextPos = getNextPos(currPos, direction);
             //Print positions/turnID to stdoutput if received
             printf ("x:%d $y:d\n", currPos.x, currPos.y);
             printf ("TurnId: %d\n", TurnID);
@@ -123,11 +123,13 @@ bool avatar_move(int AvatarID, int comm_sock, counters_t* visited,int direction,
             }
 
             // otherwise:
-            for (int dir = 0; i <= 3; i++){
+            for (int dir = 0; dir <= 3; i++){
                 if (avatar_move(AvatarID, comm_sock, visited, dir, destination) == true){
                     return true;
                 }
             }
+            // counters_set()  // unmark current square
+            return false;
            
         }            
     }
@@ -149,10 +151,25 @@ bool comparePos(XYPos posA, XYPos posB)
     }
 }
 
-// bool inMaze(XYPos pos, int mazeHeight, int mazeWidth)
-// {
+XYPos getNextPos(XYPos curr, int direction)
+{
+    XYPos nextPos;
+    nextPos = curr;
+    
+    if (direction < 0 || direction >3){
+        fprintf(stderr, "Invalid direction val. \n");
+    } else if (direction == 0) {
+        nextPos.x = curr.x -1;
+    } else if (direction == 1){
+        nextPos.y = curr.y +1;
+    } else if (direction == 2){
+        nextPos.x = curr.x +1;
+    } else if (direction ==3){
+        nextPos.y = curr.y -1;
+    }
+    return nextPos;
+}
 
-// }
 
 bool sendMsg(int comm_sock) 
 {
