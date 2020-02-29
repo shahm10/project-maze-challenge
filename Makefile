@@ -5,7 +5,7 @@
 # Temi Prioleau, 2020
 
 PROGS = AMSTARTUP
-LLIBS = 
+LLIBS = avatar.h counters.h
 
 FLAGS = # 
 CFLAGS = -Wall -pedantic -std=c11 -ggdb $(FLAGS)
@@ -14,13 +14,15 @@ MAKE = make
 # for memory-leak tests
 VALGRIND = valgrind --leak-check=full --show-leak-kinds=all
 
-all: $(PROGS)
+all: $(PROGS) AMSTARTUP.o avatar.o
 
 ########### inclient ##################
-AMSTARTUP: AMSTARTUP.o $(LLIBS)
-	$(CC) $(CFLAGS) $^ -o $@
+AMSTARTUP: AMSTARTUP.o avatar.o $(LLIBS)
+	$(CC) $(CFLAGS) $^ $(LLIBS) -o $@
 
 AMSTARTUP.o: 
+
+avatar.o: avatar.h counters.h
 
 clean:
 	rm -rf *~ *.o *.dSYM

@@ -12,12 +12,17 @@
 #include <netdb.h>	      // socket-related structures
 #include <sys/socket.h>
 
-#include <amazing.h>
-#include <counters.h>
+#include "amazing.h"
+#include "counters.h"
 
+
+bool avatar_move(int AvatarID, int comm_sock, counters_t* visited,int direction, XYPos currPos, XYPos destination);
+bool comparePos(XYPos posA, XYPos posB) ;
+XYPos getNextPos(XYPos curr, int direction);
+bool sendMsg(int comm_sock, int avatarID, int direction);
 
 // initializes avatar (one of N threads)
-void main(int AvatarID, int nAvatars, int Difficulty, char* hostname, int MazePort, char* filename, XYPos destination) 
+int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int MazePort, char* filename,XYPos start, XYPos destination) 
 {
     // open socket
     int comm_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -33,7 +38,7 @@ void main(int AvatarID, int nAvatars, int Difficulty, char* hostname, int MazePo
     // Look up the hostname specified on command line
     struct hostent *hostp = gethostbyname(hostname); // server hostname
     if (hostp == NULL) {
-        fprintf(stderr, "%s: unknown host '%s'\n", program, hostname);
+        fprintf(stderr, "unknown host '%s'\n", hostname);
         exit(3);
     }  
     memcpy(&server.sin_addr, hostp->h_addr_list[0], hostp->h_length);
@@ -49,14 +54,13 @@ void main(int AvatarID, int nAvatars, int Difficulty, char* hostname, int MazePo
     // initialize set to hold visited coords
     counters_t* visited_coords = counters_new();
     if (visited_coords == NULL){
-        fprintf (stderr, "\n Set initialization failed. \n" )
+        fprintf (stderr, "\n Set initialization failed. \n" );
     }
 
     int start_direction = 0;
-    avatar_move(AvatarID, comm_sock, visited_coords, start_direction, destination);
-    
-    close(comm_sock);
+    avatar_move(AvatarID, comm_sock, visited_coords, start_direction, start, destination); 
 
+    close(comm_sock);
     return 0;
 }
 
@@ -64,7 +68,7 @@ void main(int AvatarID, int nAvatars, int Difficulty, char* hostname, int MazePo
 /*
 * Recursively read turn messages from server and pass move messages
 */
-bool avatar_move(int AvatarID, int comm_sock, counters_t* visited,int direction, XYPos destination) 
+bool avatar_move(int AvatarID, int comm_sock, counters_t* visited, int direction, XYPos currPos, XYPos destination) 
 {
     //receive message AM_AVATAR_TURN
     AM_Message servermsg;
@@ -86,22 +90,16 @@ bool avatar_move(int AvatarID, int comm_sock, counters_t* visited,int direction,
         printf ("AM_AVATAR_TURN received from server");
 
         // Make sure it is the avatar's turn
-        int TurnID = ntohl(servermsg.avatar_turn.TurnID);
+        int TurnID = ntohl(servermsg.avatar_turn.TurnId);
         if (TurnID == AvatarID) {
-        
-            XYPos currPos;
 
-            // call algorithm function
-            if (currPos != NULL) {
-                XYPos prevPos = currPos;
-            }
+            XYPos prevPos = currPos;
 
-            currPos = ntohl(servermsg.avatar_turn.XYPos[AvatarID]);   // get position of self in the maze
-            counters_set(currPos.x, currPos.y);
+            currPos = servermsg.avatar_turn.Pos[AvatarID];   // get position of self in the maze
+            counters_set(visited, currPos.x, currPos.y);
 
-            XYPos nextPos = getNextPos(currPos, direction);
             //Print positions/turnID to stdoutput if received
-            printf ("x:%d $y:d\n", currPos.x, currPos.y);
+            printf ("x:%d y:%d\n", currPos.x, currPos.y);
             printf ("TurnId: %d\n", TurnID);
 
             // if avatar has reached destination.
@@ -123,17 +121,18 @@ bool avatar_move(int AvatarID, int comm_sock, counters_t* visited,int direction,
             }
 
             // otherwise:
-            for (int dir = 0; dir <= 3; i++){
-                if (avatar_move(AvatarID, comm_sock, visited, dir, destination) == true){
+            for (int dir = 0; dir <= 3; dir++){
+                sendMsg(comm_sock, AvatarID, direction);
+                if (avatar_move(AvatarID, comm_sock, visited, dir, currPos, destination) == true){
                     return true;
                 }
             }
             // counters_set()  // unmark current square
-            return false;
-           
+            return false;  
         }            
     }
-)
+    return false;
+}
 
 /*
  * Returns false if positions are different or one is NULL
@@ -141,14 +140,13 @@ bool avatar_move(int AvatarID, int comm_sock, counters_t* visited,int direction,
  */
 bool comparePos(XYPos posA, XYPos posB) 
 {
-    if (posA == NULL || posB == NULL) {
+    if (posA.x == 0 || posA.y == 0 || posB.x == 0 || posB.y == 0) {
         return false;
     }
     if (posA.x == posB.x && posA.y == posB.y) {
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 XYPos getNextPos(XYPos curr, int direction)
@@ -171,13 +169,13 @@ XYPos getNextPos(XYPos curr, int direction)
 }
 
 
-bool sendMsg(int comm_sock) 
+bool sendMsg(int comm_sock, int avatarID, int direction) 
 {
     // 4. write to socket
     AM_Message msg;
     msg.type = htonl(AM_AVATAR_MOVE);
-    msg.init.AvatarId = htonl(difficulty);
-    msg.init.Direction = htonl(nAvatars);
+    msg.avatar_move.AvatarId = avatarID;
+    msg.avatar_move.Direction = direction;
 
     //try to send the move message to the server
     printf ("Try to send the AM_AVATAR_MOVE message to the server... \n");
@@ -186,4 +184,5 @@ bool sendMsg(int comm_sock)
         fprintf (stderr, "Error: can't send message\n");
         exit (5);
     } 
+    return true;
 }
