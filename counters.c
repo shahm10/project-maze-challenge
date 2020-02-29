@@ -43,9 +43,6 @@ typedef struct counters {
 static counter_t *counter_new(const int key);
 static counter_t* counters_find(counters_t *ctrs, const int key);
 
-void *count_malloc(size_t size);
-void count_free(void *ptr);
-
 /**************** counters_new() ****************/
 /* Create a new (empty) counter structure.
  *
@@ -57,7 +54,7 @@ void count_free(void *ptr);
  *   later calling counters_delete();
  */
 counters_t *counters_new(void) {
-    counters_t *counters = count_malloc(sizeof(counters_t));
+    counters_t *counters = malloc(sizeof(counters_t));
 
     if (counters == NULL) {
         return NULL; // error allocating counterset
@@ -73,7 +70,7 @@ counters_t *counters_new(void) {
 // the 'static' modifier means this function is not visible 
 // outside this file
 static counter_t* counter_new(const int key) {
-  counter_t *node = count_malloc(sizeof(counter_t));
+  counter_t *node = malloc(sizeof(counter_t));
 
   if (node == NULL) {
     // error allocating memory for node; return error
@@ -247,11 +244,11 @@ void counters_delete(counters_t *ctrs) {
     if (ctrs != NULL) {
         for (counter_t *node = ctrs->head; node != NULL; ) {
             counter_t *next = node->next;
-            count_free(node); // free current node and iterate to next one
+            free(node); // free current node and iterate to next one
             node = next;
         }
     }
-    count_free(ctrs);
+    free(ctrs);
 }
 
 /**************** counters_find() ****************/
