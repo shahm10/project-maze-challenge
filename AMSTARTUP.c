@@ -22,6 +22,8 @@
 #include <sys/socket.h>
 #include "amazing.h"
 
+#include "avatar.h"
+
 /**************** file-local constants ****************/
 #define BUFSIZE 1024     // read/write buffer size
 
@@ -124,7 +126,7 @@ main(const int argc, char *argv[])
   }
   printf ("Server connected\n");
 
-  if (ntohl(servermsg.type) == AM_INIT_OK) {
+  if (ntohl (servermsg.type) == AM_INIT_OK) {
     printf ("AM_INIT successfully processed\n");
     mazeport =  ntohl(servermsg.init_ok.MazePort);
     mazewidth = ntohl(servermsg.init_ok.MazeWidth);
@@ -168,6 +170,7 @@ main(const int argc, char *argv[])
   }
   
   close(comm_sock);
+
 
   return 0;
 }
