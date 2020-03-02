@@ -18,23 +18,34 @@
 #include <unistd.h>	      // read, write, close
 #include <string.h>	      // memcpy, memset
 #include <netdb.h>	      // socket-related structures
+#include <pthread.h>
 #include <sys/socket.h>
 #include "amazing.h"
+#include <time.h>
+#include <pthread.h>
 
 #include "avatar.h"
 
 /**************** file-local constants ****************/
 #define BUFSIZE 1024     // read/write buffer size
 
+/**************** global variables ****************/
+  char *program;	  // this program's name
+  char *hostname;	  // server hostname
+  char *logname;
+  int port;
+  int nAvatars;
+  int difficulty;
+  int mazeport;
+  int mazewidth;
+  int mazeheight;
+
+void* initiate_avatar(void* id_num_pointer);
+
 /**************** main() ****************/
 int
 main(const int argc, char *argv[])
 {
-  char *program;	  // this program's name
-  char *hostname;	  // server hostname
-  int port;
-  int nAvatars;
-  int difficulty;
 
   // 0. Check arguments
   program = argv[0];
@@ -116,29 +127,98 @@ main(const int argc, char *argv[])
     exit (7);
   }
   printf ("Server connected\n");
-  
+
+  printf("Type: %d \n", servermsg.type);
+
   if (ntohl (servermsg.type) == AM_INIT_OK) {
     printf ("AM_INIT successfully processed\n");
-    int mazeport =  ntohl(servermsg.init_ok.MazePort);
-    int mazewidth = ntohl(servermsg.init_ok.MazeWidth);
-    int mazeheight = ntohl(servermsg.init_ok.MazeHeight);
+    mazeport =  ntohl(servermsg.init_ok.MazePort);
+    mazewidth = ntohl(servermsg.init_ok.MazeWidth);
+    mazeheight = ntohl(servermsg.init_ok.MazeHeight);
 
     //Just to check if it is connected
     printf ("%d\n", mazeport);
     printf ("%d\n", mazewidth);
     printf ("%d\n", mazeheight);
+      // 5. Create the log file 
+    FILE *fp;
+    char *user = getenv ("USER");
+    char logname[200];
+    sprintf (logname, "Amazing_%s_%d_%d.log", user, nAvatars, difficulty);
 
-    avatar_new(0, nAvatars, difficulty, "flume.cs.dartmouth.edu", mazeport, mazeheight, mazewidth, "testing");
+    printf("Creating a log file...\n");
+    fp = fopen (logname, "w");
+    if (fp == NULL) {
+      fprintf (stderr, "Error: cannot create log file \n");
+      exit (5);
+    }
+    
+    // Get the time info for log files 
+    time_t currentime;
+    struct tm *timeptr;
+
+    time(&currentime);
+    timeptr = localtime(&currentime);
+    fprintf(fp, "%s, %d, %s", user, ntohl(servermsg.init_ok.MazePort), asctime(timeptr));
+  
+  
+
+    //Start the n copies of avatar client
+    avatar_new(0, nAvatars, difficulty, "flume.cs.dartmouth.edu", mazeport, mazeheight, mazewidth, logname);
+
+
+    fclose (fp);
+    
+//     6. Need to initiate the avatars & start up N threads 
+    
+    // Allocating space for the name of the thread
+    char thread_name[50];
+    bag_t* thread_bag = bag_new();
+
+    // Making the threads
+    for (int i = 1; i <= nAvatars; i++) {
+      // Making unique name for the thread
+      sprintf(thread_name, "thread_%d", i);
+
+      // Creation of the thread
+      pthread_t *thread_name;
+      void* id_number = &i;
+      int check = pthread_create(&*thread_name, NULL, initiate_avatar, id_number);
+
+      // If unsuccesful in creating thread
+      if (check != 0) {
+        // Print error message and exit
+        printf("Error: Could not produce avatar client.\n");
+        exit(8);
+      }
+
+      bag_insert(thread_bag, *thread_name);
+      
+    }
   }
 
   if (ntohl (servermsg.type) == AM_INIT_FAILED) {
     fprintf (stderr, "\nInitialization failed.\n");
+    //need to clean up and free everything
+    close(comm_sock);
     exit (5);
   }
+
+  
+
   
   close(comm_sock);
 
 
   return 0;
+
 }
 
+void* initiate_avatar(void* id_num_pointer)
+{
+
+  // Storing number from the null pointer
+  int id_num = *((int *) id_num_pointer);
+  // Start new avatar
+  avatar_new(id_num, nAvatars, Difficulty, hostname, MazePort, MazeHeight, MazeWidth, logname);
+}

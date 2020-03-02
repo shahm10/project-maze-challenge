@@ -16,16 +16,18 @@
 #include "counters.h"
 #include "avatar.h"
 
+
 XYPos prevPos;
 
 // initializes avatar (one of N threads)
-int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int MazePort, int MazeHeight, int MazeWidth, char* filename) 
+int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int MazePort, int MazeHeight, int MazeWidth, char *logname) 
 {
     printf("Number of avatars: %d \n", nAvatars);
     // open socket
     int comm_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (comm_sock < 0) {
         perror("opening socket");
+        //need to clean everytime it hits an error
         exit(2);
     }
 
@@ -46,21 +48,32 @@ int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int M
         perror("connecting stream socket");
         exit(4);
     }
-    printf("Connected!\n");
+    printf("Avatar socket connected!\n");
 
     // send AM_AVATAR_READY
     AM_Message ready_msg;
     ready_msg.type = htonl(AM_AVATAR_READY);
-    ready_msg.avatar_ready.AvatarId = AvatarID;
+    ready_msg.avatar_ready.AvatarId = htonl(AvatarID);
 
-    //try to send the AM_INIT message to the server
+    //try to send the AM_AVATAR_READY message to the server
     printf ("Try to send the AM_AVATAR_READY message to the server... \n");
     send(comm_sock, &ready_msg, sizeof(AM_Message), 0);
     if (send(comm_sock, &ready_msg, sizeof(AM_Message), 0) == -1) {
+        close (comm_sock);
         fprintf (stderr, "Error: can't send message\n");
         exit (5);
     }
-    printf ("Server connected\n");
+    printf ("Ready message is sent\n");
+
+    //Append to log file the avatar turn number 
+    FILE *fp = fopen (logname, "a");
+    if (fp == NULL) {
+        fprintf(stderr, "logname file cannot be opened\n");
+        exit (2);
+    }
+    fprintf (fp, "*****\n");
+
+    printf("work\n");
 
     
     // printf ("Received message from server\n");
@@ -94,7 +107,10 @@ int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int M
 * Recursively read turn messages from server and pass move messages
 */
 // bool avatar_move(int AvatarID, int comm_sock, int MazeWidth, int MazeHeight, int visited[MazeHeight][MazeWidth], int direction, XYPos currPos, XYPos destination) 
-bool avatar_move(int AvatarID, int nAvatars, int comm_sock, int MazeWidth, int MazeHeight, int** visited, int direction, XYPos destination) 
+
+bool avatar_move(int AvatarID, int nAvatars, int comm_sock, int MazeWidth, int MazeHeight, int** visited, int direction, XYPos destination)
+
+
 {
 
     //receive message AM_AVATAR_TURN
@@ -146,6 +162,7 @@ bool avatar_move(int AvatarID, int nAvatars, int comm_sock, int MazeWidth, int M
             visited[ntohl(start.y)][ntohl(start.x)] = 1;
             printf("looping.. \n");
             // otherwise:
+
             for (int dir = 0; dir < M_NUM_DIRECTIONS; dir++){
                 if (sendMsg(comm_sock, AvatarID, direction)) {
                     printf("turn message to server succesfully \n");
