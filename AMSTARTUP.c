@@ -32,13 +32,14 @@
 /**************** global variables ****************/
   char *program;	  // this program's name
   char *hostname;	  // server hostname
-  char *logname;
   int port;
   int nAvatars;
   int difficulty;
   int mazeport;
   int mazewidth;
   int mazeheight;
+  char logname[200];
+
 
 void* initiate_avatar(void* id_num_pointer);
 
@@ -140,10 +141,10 @@ main(const int argc, char *argv[])
     printf ("%d\n", mazeport);
     printf ("%d\n", mazewidth);
     printf ("%d\n", mazeheight);
+
       // 5. Create the log file 
     FILE *fp;
     char *user = getenv ("USER");
-    char logname[200];
     sprintf (logname, "Amazing_%s_%d_%d.log", user, nAvatars, difficulty);
 
     printf("Creating a log file...\n");
@@ -164,38 +165,53 @@ main(const int argc, char *argv[])
   
 
     //Start the n copies of avatar client
-    avatar_new(0, nAvatars, difficulty, "flume.cs.dartmouth.edu", mazeport, mazeheight, mazewidth, logname);
+    //avatar_new(0, nAvatars, difficulty, "flume.cs.dartmouth.edu", mazeport, mazeheight, mazewidth, logname);
 
 
     fclose (fp);
+  }
     
 //     6. Need to initiate the avatars & start up N threads 
-    
-    // Allocating space for the name of the thread
-    char thread_name[50];
-    bag_t* thread_bag = bag_new();
-
-    // Making the threads
-    for (int i = 1; i <= nAvatars; i++) {
-      // Making unique name for the thread
-      sprintf(thread_name, "thread_%d", i);
-
-      // Creation of the thread
-      pthread_t *thread_name;
-      void* id_number = &i;
-      int check = pthread_create(&*thread_name, NULL, initiate_avatar, id_number);
-
-      // If unsuccesful in creating thread
-      if (check != 0) {
-        // Print error message and exit
-        printf("Error: Could not produce avatar client.\n");
-        exit(8);
-      }
-
-      bag_insert(thread_bag, *thread_name);
-      
+  pthread_t arraythread[nAvatars];
+  for (int i = 0; i < nAvatars; i++) {
+    int check = pthread_create(&arraythread[i], NULL, initiate_avatar, (void *) (intptr_t) i);
+    printf("creating thread %d\n", i);
+    if (check) {
+      fprintf (stderr, "thread not created \n");
+      exit (3);
     }
+
   }
+  for (int j = 0; j < nAvatars; j++) {
+    pthread_join (arraythread[j], NULL);
+    //can change the NULL to exit status later
+  }
+
+    // // Allocating space for the name of the thread
+    // char thread_name[50];
+    // bag_t* thread_bag = bag_new();
+
+    // // Making the threads
+    // for (int i = 1; i <= nAvatars; i++) {
+    //   // Making unique name for the thread
+    //   sprintf(thread_name, "thread_%d", i);
+
+    //   // Creation of the thread
+    //   pthread_t *thread_name;
+    //   void* id_number = &i;
+    //   int check = pthread_create(&*thread_name, NULL, initiate_avatar, id_number);
+
+    //   // If unsuccesful in creating thread
+    //   if (check != 0) {
+    //     // Print error message and exit
+    //     printf("Error: Could not produce avatar client.\n");
+    //     exit(8);
+    //   }
+
+    //   bag_insert(thread_bag, *thread_name);
+      
+    // }
+  //}
 
   if (ntohl (servermsg.type) == AM_INIT_FAILED) {
     fprintf (stderr, "\nInitialization failed.\n");
@@ -214,11 +230,14 @@ main(const int argc, char *argv[])
 
 }
 
-void* initiate_avatar(void* id_num_pointer)
+void* initiate_avatar(void* arg)
 {
 
   // Storing number from the null pointer
-  int id_num = *((int *) id_num_pointer);
+  int id_num = (int) (intptr_t) arg;
   // Start new avatar
-  avatar_new(id_num, nAvatars, Difficulty, hostname, MazePort, MazeHeight, MazeWidth, logname);
+  printf("%s\n", logname);
+  avatar_new(id_num, nAvatars, difficulty, hostname, mazeport, mazeheight, mazewidth, logname);
+
+  return NULL;
 }
