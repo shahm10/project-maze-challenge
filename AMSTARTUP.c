@@ -21,6 +21,8 @@
 #include <pthread.h>
 #include <sys/socket.h>
 #include "amazing.h"
+#include <time.h>
+#include <pthread.h>
 
 #include "avatar.h"
 
@@ -126,6 +128,8 @@ main(const int argc, char *argv[])
   }
   printf ("Server connected\n");
 
+  printf("Type: %d \n", servermsg.type);
+
   if (ntohl (servermsg.type) == AM_INIT_OK) {
     printf ("AM_INIT successfully processed\n");
     mazeport =  ntohl(servermsg.init_ok.MazePort);
@@ -136,7 +140,37 @@ main(const int argc, char *argv[])
     printf ("%d\n", mazeport);
     printf ("%d\n", mazewidth);
     printf ("%d\n", mazeheight);
+      // 5. Create the log file 
+    FILE *fp;
+    char *user = getenv ("USER");
+    char logname[200];
+    sprintf (logname, "Amazing_%s_%d_%d.log", user, nAvatars, difficulty);
 
+    printf("Creating a log file...\n");
+    fp = fopen (logname, "w");
+    if (fp == NULL) {
+      fprintf (stderr, "Error: cannot create log file \n");
+      exit (5);
+    }
+    
+    // Get the time info for log files 
+    time_t currentime;
+    struct tm *timeptr;
+
+    time(&currentime);
+    timeptr = localtime(&currentime);
+    fprintf(fp, "%s, %d, %s", user, ntohl(servermsg.init_ok.MazePort), asctime(timeptr));
+  
+  
+
+    //Start the n copies of avatar client
+    avatar_new(0, nAvatars, difficulty, "flume.cs.dartmouth.edu", mazeport, mazeheight, mazewidth, logname);
+
+
+    fclose (fp);
+    
+//     6. Need to initiate the avatars & start up N threads 
+    
     // Allocating space for the name of the thread
     char thread_name[50];
     bag_t* thread_bag = bag_new();
@@ -161,18 +195,23 @@ main(const int argc, char *argv[])
       bag_insert(thread_bag, *thread_name);
       
     }
-
   }
 
   if (ntohl (servermsg.type) == AM_INIT_FAILED) {
     fprintf (stderr, "\nInitialization failed.\n");
+    //need to clean up and free everything
+    close(comm_sock);
     exit (5);
   }
+
+  
+
   
   close(comm_sock);
 
 
   return 0;
+
 }
 
 void* initiate_avatar(void* id_num_pointer)
