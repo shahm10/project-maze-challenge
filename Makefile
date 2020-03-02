@@ -30,4 +30,5 @@ counters.o: counters.h
 clean:
 	rm -rf *~ *.o *.dSYM
 	rm -f $(PROGS) 
+	rm -f vgcore.* core
 
