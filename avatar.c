@@ -162,8 +162,8 @@ bool avatar_move(int AvatarID, int nAvatars, int comm_sock, int MazeWidth, int M
             visited[ntohl(start.y)][ntohl(start.x)] = 1;
             printf("looping.. \n");
             // otherwise:
-            for (int dir = 0; dir <= 3; dir++){
 
+            for (int dir = 0; dir < M_NUM_DIRECTIONS; dir++){
                 if (sendMsg(comm_sock, AvatarID, direction)) {
                     printf("turn message to server succesfully \n");
                 } else {
@@ -172,7 +172,6 @@ bool avatar_move(int AvatarID, int nAvatars, int comm_sock, int MazeWidth, int M
 
                 // where should this be? FIX 
                 if (avatar_move(AvatarID, nAvatars, comm_sock, MazeHeight, MazeWidth, visited, dir, destination) == true){
-                if (avatar_move(AvatarID, comm_sock, MazeHeight, MazeWidth, visited, dir, destination) == true){
                     printf("returning true");
                     return true;
                 }
