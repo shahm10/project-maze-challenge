@@ -112,7 +112,6 @@ bool avatar_move(int AvatarID, int comm_sock, int MazeWidth, int MazeHeight, int
     printf ("Received message from server \n");
     printf("type: %d \n", servermsg.type);
     printf("message goal: %d \n", ntohl(AM_AVATAR_TURN)); // unclear when to use and when not to use
-    printf("AM_AV: %d \n", ntohl(AM_NO_SUCH_AVATAR));
     
     int TurnID = ntohl(servermsg.avatar_turn.TurnId);
     XYPos start = servermsg.avatar_turn.Pos[AvatarID];
@@ -160,13 +159,14 @@ bool avatar_move(int AvatarID, int comm_sock, int MazeWidth, int MazeHeight, int
             printf("looping.. \n");
             // otherwise:
             for (int dir = 0; dir <= 3; dir++){
-                sendMsg(comm_sock, AvatarID, direction);
+                if (sendMsg(comm_sock, AvatarID, direction)) {
+                    printf("turn message to server succesfully \n");
+                }
                 if (avatar_move(AvatarID, comm_sock, MazeHeight, MazeWidth, visited, dir, destination) == true){
                     printf("returning true");
                     return true;
                 }
             }
-            // counters_set()  // unmark current square
             return false;  
         }            
     }
@@ -227,8 +227,8 @@ bool sendMsg(int comm_sock, int avatarID, int direction)
     // 4. write to socket
     AM_Message msg;
     msg.type = htonl(AM_AVATAR_MOVE);
-    msg.avatar_move.AvatarId = avatarID;
-    msg.avatar_move.Direction = direction;
+    msg.avatar_move.AvatarId = htonl(avatarID);
+    msg.avatar_move.Direction = htonl(direction);
 
     //try to send the move message to the server
     printf ("Try to send the AM_AVATAR_MOVE message to the server... \n");
