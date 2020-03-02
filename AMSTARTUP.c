@@ -18,21 +18,30 @@
 #include <unistd.h>	      // read, write, close
 #include <string.h>	      // memcpy, memset
 #include <netdb.h>	      // socket-related structures
+#include <pthread.h>
 #include <sys/socket.h>
 #include "amazing.h"
 
 /**************** file-local constants ****************/
 #define BUFSIZE 1024     // read/write buffer size
 
+/**************** global variables ****************/
+  char *program;	  // this program's name
+  char *hostname;	  // server hostname
+  char *logname;
+  int port;
+  int nAvatars;
+  int difficulty;
+  int mazeport;
+  int mazewidth;
+  int mazeheight;
+
+void* initiate_avatar(void* id_num_pointer);
+
 /**************** main() ****************/
 int
 main(const int argc, char *argv[])
 {
-  char *program;	  // this program's name
-  char *hostname;	  // server hostname
-  int port;
-  int nAvatars;
-  int difficulty;
 
   // 0. Check arguments
   program = argv[0];
@@ -115,18 +124,41 @@ main(const int argc, char *argv[])
   }
   printf ("Server connected\n");
 
-
-
-  if (ntohl (servermsg.type) == AM_INIT_OK) {
+  if (ntohl(servermsg.type) == AM_INIT_OK) {
     printf ("AM_INIT successfully processed\n");
-    int mazeport =  ntohl(servermsg.init_ok.MazePort);
-    int mazewidth = ntohl(servermsg.init_ok.MazeWidth);
-    int mazeheight = ntohl(servermsg.init_ok.MazeHeight);
+    mazeport =  ntohl(servermsg.init_ok.MazePort);
+    mazewidth = ntohl(servermsg.init_ok.MazeWidth);
+    mazeheight = ntohl(servermsg.init_ok.MazeHeight);
 
     //Just to check if it is connected
     printf ("%d\n", mazeport);
     printf ("%d\n", mazewidth);
     printf ("%d\n", mazeheight);
+
+    // Allocating space for the name of the thread
+    char thread_name[50];
+    bag_t* thread_bag = bag_new();
+
+    // Making the threads
+    for (int i = 1; i <= nAvatars; i++) {
+      // Making unique name for the thread
+      sprintf(thread_name, "thread_%d", i);
+
+      // Creation of the thread
+      pthread_t *thread_name;
+      void* id_number = &i;
+      int check = pthread_create(&*thread_name, NULL, initiate_avatar, id_number);
+
+      // If unsuccesful in creating thread
+      if (check != 0) {
+        // Print error message and exit
+        printf("Error: Could not produce avatar client.\n");
+        exit(8);
+      }
+
+      bag_insert(thread_bag, *thread_name);
+      
+    }
 
   }
 
@@ -140,4 +172,11 @@ main(const int argc, char *argv[])
   return 0;
 }
 
+void* initiate_avatar(void* id_num_pointer)
+{
 
+  // Storing number from the null pointer
+  int id_num = *((int *) id_num_pointer);
+  // Start new avatar
+  avatar_new(id_num, nAvatars, Difficulty, hostname, MazePort, MazeHeight, MazeWidth, logname);
+}
