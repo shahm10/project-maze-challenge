@@ -124,8 +124,8 @@ void maze_delete(maze_t *mz)
 // Maze printing function
 void maze_print(maze_t* mz)
 {
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
+    for (int i = 0; i < mz->height; i++) {
+        for (int j = 0; j < mz->width; j++) {
         
             // 1 is a blank tile
             if (getTile(mz, i, j) == 1) {
