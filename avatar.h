@@ -24,5 +24,5 @@ bool avatar_move(int AvatarID, int nAvatars, int comm_sock, int MazeWidth, int M
 XYPos convertXYPos(XYPos pos);
 
 bool comparePos(XYPos posA, XYPos posB) ;
-XYPos getNextPos(XYPos curr, int direction);
+// XYPos getNextPos(XYPos curr, int direction);
 bool sendMsg(int comm_sock, int avatarID, int direction);

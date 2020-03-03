@@ -15,9 +15,8 @@
 #include "amazing.h"
 #include "counters.h"
 #include "avatar.h"
+#include "object.h"
 
-
-XYPos prevPos;
 
 // initializes avatar (one of N threads)
 int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int MazePort, int MazeHeight, int MazeWidth, char *logname) 
@@ -75,159 +74,57 @@ int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int M
 
     printf("work\n");
 
-    
-    // printf ("Received message from server\n");
-
     // Receive AM_AVATAR_TURN (avatarID, XYPos of all avatars)
 
-    XYPos destination;
-    destination.x = 15;
-    destination.y = 15;
         
-    printf("allocating visited.. \n");
-    int **visited;
-    visited = malloc(MazeHeight * sizeof(*visited));            //needs to be freed eventually - FIX
+    printf("allocating maze components... \n");
+    int **maze;
+    visited = malloc(MazeHeight * sizeof(*visited));            //2x mazeheight +1
     for (int i = 0; i<MazeHeight; i++){
         visited[i] = malloc(MazeWidth*sizeof(*visited[i]));
-
     }
 
-    int start_direction = 0;
-    avatar_move(AvatarID, nAvatars, comm_sock, MazeWidth, MazeHeight, visited, start_direction, destination); 
+
+    // not freeing correctly
+    for (int i = 0; i<MazeHeight; i++){
+        free(visited[i]);
+    }
     free(visited);
     
     close(comm_sock);
     printf("closing socket ... \n");
-
     return 0;
 }
 
-    
-/*
-* Recursively read turn messages from server and pass move messages
-*/
-// bool avatar_move(int AvatarID, int comm_sock, int MazeWidth, int MazeHeight, int visited[MazeHeight][MazeWidth], int direction, XYPos currPos, XYPos destination) 
 
-bool avatar_move(int AvatarID, int nAvatars, int comm_sock, int MazeWidth, int MazeHeight, int** visited, int direction, XYPos destination)
-
-
+int choose_direction(object** maze, int last_direction)
 {
-
-    //receive message AM_AVATAR_TURN
-    AM_Message servermsg;
-    int receive = 0;
-    receive = recv(comm_sock, &servermsg, sizeof(AM_Message), 0);
-    if (receive < 0) {
-        fprintf (stderr, "Error: cannot receive message\n");
-        exit (6);               // not sure that this should be exit/return FIX
+    // FIRST MOVE
+    if (last_direction == NULL || last_direction == 1){
+        return 3; // M_EAST
+    } else if (last_direction == 0){
+        return 1; // M_NORTH
+    } else if (last_direction == 2) {
+        return 0; // M_WEST
+    } else if (last_direction == 3) {
+        return 2; // M_SOUTH
+    } else {
+        fprintf(stderr, "last direction is an invalid int\n");
+        return NULL;
     }
-
-    if (receive == 0) {
-        fprintf (stderr, "Error: connection closed\n");
-        exit (7);               // not sure that this should be exit/return FIX
-    }
-    printf ("Received message from server \n");
-
-    // Receive AM_AVATAR_TURN (avatarID, XYPos of all avatars)
-    if (ntohl(servermsg.type) == AM_AVATAR_TURN) {
-
-        printf ("AM_AVATAR_TURN received from server \n");
-
-        // Make sure it is the avatar's turn
-        int TurnID = ntohl(servermsg.avatar_turn.TurnId);
-        printf("TID %d AID %d \n", TurnID, AvatarID);
-        if (TurnID % nAvatars == AvatarID) {
-            XYPos start = servermsg.avatar_turn.Pos[AvatarID];   // get position of self in the maze
-
-             //Print positions/turnID to stdoutput if received   
-            printf("get me the XYPos %d, %d\n", ntohl(start.x), ntohl(start.y));
-
-            // if avatar has reached destination.
-            if (comparePos(start, destination)) {
-                printf("Avatar has reached destination. \n");
-                return true;
-            }
-            
-            // if avatar is in the same position as last move
-            if (comparePos(start, prevPos)) {
-                fprintf(stderr, "Avatar hit a wall.  \n");
-                return false;
-            }
-            prevPos = start;
-            // if position has already been visited
-            if (visited[ntohl(start.y)][ntohl(start.x)] == 1) {
-                fprintf(stderr, "Avatar has reached a visited point. \n");
-                return false;
-            }
-            visited[ntohl(start.y)][ntohl(start.x)] = 1;
-            printf("looping.. \n");
-            // otherwise:
-
-            for (int dir = 0; dir < M_NUM_DIRECTIONS; dir++){
-                if (sendMsg(comm_sock, AvatarID, direction)) {
-                    printf("turn message to server succesfully \n");
-                } else {
-                    fprintf(stderr, "message did not send to server successfully \n");
-                }
-
-                // where should this be? FIX 
-                if (avatar_move(AvatarID, nAvatars, comm_sock, MazeHeight, MazeWidth, visited, dir, destination) == true){
-                    printf("returning true");
-                    return true;
-                }
-
-            }
-            printf("Out of the loop ... \n");
-            visited[ntohl(start.y)][ntohl(start.x)] = 0; 
-            return false;  
-        }
-    }
-    return false;
 }
+// assume right is east
 
 /*
- * ntohls x, y coordinates from server in place - FIX not sure if works
- */
-XYPos convertXYPos(XYPos pos)
-{
-    pos.x = ntohl(pos.x);
-    pos.y = ntohl(pos.y);
-    printf("%d %d\n", pos.x, pos.y);
-    return pos;
-}
-
-/*
- * Returns false if positions are different or one is NULL
+ * Returns false if positions are different
  * returns true if positions are same 
  */
 bool comparePos(XYPos posA, XYPos posB) 
 {
-    if (posA.x == 0 || posA.y == 0 || posB.x == 0 || posB.y == 0) {
-        return false;
-    }
     if (posA.x == posB.x && posA.y == posB.y) {
         return true;
     }
     return false;
-}
-
-XYPos getNextPos(XYPos curr, int direction)
-{
-    XYPos nextPos;
-    nextPos = curr;
-    
-    if (direction < 0 || direction >3){
-        fprintf(stderr, "Invalid direction val. \n");
-    } else if (direction == 0) {
-        nextPos.x = curr.x -1;
-    } else if (direction == 1){
-        nextPos.y = curr.y +1;
-    } else if (direction == 2){
-        nextPos.x = curr.x +1;
-    } else if (direction ==3){
-        nextPos.y = curr.y -1;
-    }
-    return nextPos;
 }
 
 
@@ -237,6 +134,9 @@ bool sendMsg(int comm_sock, int avatarID, int direction)
     AM_Message msg;
     msg.type = htonl(AM_AVATAR_MOVE);
     msg.avatar_move.AvatarId = htonl(avatarID);
+    
+    // msg.avatar_move.AvatarId = (avatarID);
+    printf("%d, direction : %d\n ", avatarID, direction);
     // msg.avatar_move.Direction = htonl(direction);
     
     msg.avatar_move.Direction = (direction);
@@ -250,15 +150,3 @@ bool sendMsg(int comm_sock, int avatarID, int direction)
     } 
     return true;
 }
-
-
-/*
- * takes XYPos as arg
- */
-// void unvisit_coord(void *arg, int key, int count) {
-//     XYPos currPos = arg;
-//     if (currPos.x == key && currPos.y == count){
-
-        
-//     }
-// }
