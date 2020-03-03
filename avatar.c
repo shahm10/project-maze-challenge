@@ -81,9 +81,7 @@ int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int M
         fprintf(stderr, "logname file cannot be opened\n");
         exit (2);
     }
-    fprintf (fp, "*****\n");
-
-    printf("work\n");
+    fprintf (fp, "*******\n");
 
     // Receive AM_AVATAR_TURN (avatarID, XYPos of all avatars)
         
@@ -92,13 +90,16 @@ int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int M
     last_dir = -1;
     AM_Message turn_msg = getMessage(comm_sock);
     // int i = 0;
-    while (ntohl(turn_msg.type) == AM_AVATAR_TURN) {
-        pthread_mutex_lock(&mutex1);
+    while (1) {
+        if (ntohl(turn_msg.type) == AM_AVATAR_TURN){
+        //pthread_mutex_lock(&mutex1);
         // printf("iteration %d \n", i);
         // i++;
-        avatar_move(maze, turn_msg, AvatarID, nAvatars, comm_sock);
+        avatar_move(maze, turn_msg, AvatarID, nAvatars, comm_sock, fp);
+        pthread_mutex_unlock(&mutex1);}
+
         turn_msg = getMessage(comm_sock);
-        pthread_mutex_unlock(&mutex1);
+       // break;
     }
     if (ntohl(turn_msg.type) == AM_AVATAR_OUT_OF_TURN){
         printf("Out of turn \n");
@@ -125,11 +126,13 @@ int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int M
     return 0;
 }
 
-void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int comm_sock) 
+void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int comm_sock, FILE *fp) 
 {
     //   pthread_mutex_lock(&mutex1);
     int TurnID = ntohl(msg.avatar_turn.TurnId);
     if (TurnID % nAvatars == AvatarID) {
+        fprintf (fp, "TurnID: %i\n", TurnID);
+        fprintf (fp, "AvatarID: %i\n", AvatarID);
         if (last_dir == -1) {
             first_turn = false;
             prev = msg.avatar_turn.Pos[AvatarID];
@@ -141,6 +144,7 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
             }
         } else {
             XYPos curr = msg.avatar_turn.Pos[AvatarID];
+            fprintf(fp, "Current position of Avatar %i: %d, %d\n", AvatarID, ntohl(curr.x), ntohl(curr.y));
             if (comparePos(prev, curr)) {
                 updateWall(maze, curr);
                 rotateDirection();
