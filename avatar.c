@@ -19,11 +19,13 @@
 #include "maze.h"
 
 #include <pthread.h>
+#include <threads.h>
+
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 
 
 XYPos prev;
-int last_dir;
+thread_local int last_dir = -1;   // need to make this thread-specific
 bool first_turn = true;
 
 
@@ -87,14 +89,27 @@ int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int M
         
     printf("Initializing maze\n");
     maze_t *maze = maze_new(MazeWidth, MazeHeight);
-
+    last_dir = -1;
     AM_Message turn_msg = getMessage(comm_sock);
-    int i = 0;
+    // int i = 0;
     while (ntohl(turn_msg.type) == AM_AVATAR_TURN) {
-        printf("iteration %d \n", i);
-    // while (ntohl( getMessage(comm_sock).type) == AM_AVATAR_TURN) {
+        pthread_mutex_lock(&mutex1);
+        // printf("iteration %d \n", i);
+        // i++;
         avatar_move(maze, turn_msg, AvatarID, nAvatars, comm_sock);
         turn_msg = getMessage(comm_sock);
+        pthread_mutex_unlock(&mutex1);
+    }
+    if (ntohl(turn_msg.type) == AM_AVATAR_OUT_OF_TURN){
+        printf("Out of turn \n");
+    } else if (ntohl(turn_msg.type) == AM_UNKNOWN_MSG_TYPE){
+        printf("unknown msg \n");
+    } else if (ntohl(turn_msg.type) == AM_AVATAR_TURN){
+        printf("turn \n");
+    } else if (ntohl(turn_msg.type) == AM_UNEXPECTED_MSG_TYPE){
+        printf("unexpected msg \n");
+    } else if (ntohl(turn_msg.type) == AM_TOO_MANY_MOVES) {
+        printf("too many moves \n");
     }
 
     if (ntohl(turn_msg.type) == AM_MAZE_SOLVED) {
@@ -112,14 +127,14 @@ int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int M
 
 void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int comm_sock) 
 {
-      pthread_mutex_lock(&mutex1);
+    //   pthread_mutex_lock(&mutex1);
     int TurnID = ntohl(msg.avatar_turn.TurnId);
     if (TurnID % nAvatars == AvatarID) {
-        if (first_turn) {
+        if (last_dir == -1) {
             first_turn = false;
             prev = msg.avatar_turn.Pos[AvatarID];
             if (sendMsg(comm_sock, AvatarID, 3)) {
-                printf("Initial move sent successfully\n");
+                printf("%d Initial move sent successfully\n", AvatarID);
                 last_dir = 3;
             } else {
                 fprintf(stderr, "Initial move did not send successfully\n");
@@ -132,7 +147,7 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
             } else {
                 prev = curr;
                 if (sendMsg(comm_sock, AvatarID, last_dir)) {
-                    printf("Move sent successfully with direction %d\n", last_dir);
+                    printf("%dMove sent successfully with direction %d\n", last_dir, AvatarID);
                 } else {
                     fprintf(stderr, "Move with direction %d not sent successfully\n", last_dir);
                 }
@@ -141,7 +156,7 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
         }
 
     }
-  pthread_mutex_unlock(&mutex1);
+//   pthread_mutex_unlock(&mutex1);
 }
 
 void rotateDirection(void)
@@ -192,12 +207,8 @@ bool sendMsg(int comm_sock, int avatarID, int direction)
     AM_Message msg;
     msg.type = htonl(AM_AVATAR_MOVE);
     msg.avatar_move.AvatarId = htonl(avatarID);
-    
-    // msg.avatar_move.AvatarId = (avatarID);
-    printf("%d, direction : %d\n ", avatarID, direction);
-    // msg.avatar_move.Direction = htonl(direction);
-    
-    msg.avatar_move.Direction = htonl(direction);
+    msg.avatar_move.Direction = htonl(direction); 
+    printf("avatarId:%d, direction : %d\n ", avatarID, direction);
 
     //try to send the move message to the server
     printf ("Try to send the AM_AVATAR_MOVE message to the server... \n");

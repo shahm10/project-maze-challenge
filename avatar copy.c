@@ -232,8 +232,7 @@ bool sendMsg(int comm_sock, int avatarID, int direction)
     AM_Message msg;
     msg.type = htonl(AM_AVATAR_MOVE);
     msg.avatar_move.AvatarId = htonl(avatarID);
-    
-    // msg.avatar_move.AvatarId = (avatarID);
+
     printf("%d, direction : %d\n ", avatarID, direction);
     // msg.avatar_move.Direction = htonl(direction);
     
