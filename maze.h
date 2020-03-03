@@ -12,3 +12,5 @@ int getTile(maze_t *mz, int x, int y);
 void setObj(maze_t *mz, int x, int y, int type);
 
 void maze_delete(maze_t *mz);
+
+void maze_print(maze_t* mz);
