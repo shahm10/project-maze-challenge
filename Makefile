@@ -5,7 +5,7 @@
 # Temi Prioleau, 2020
 
 PROGS = AMSTARTUP
-OBJS = AMSTARTUP.o avatar.o counters.o
+OBJS = AMSTARTUP.o avatar.o object.o maze.o
 # LLIBS = avatar.h counters.h
 
 FLAGS = # 
@@ -23,9 +23,15 @@ AMSTARTUP: $(OBJS) $(LLIBS)
 
 AMSTARTUP.o: 
 
-avatar.o: avatar.h counters.h
+avatar.o: avatar.h maze.h object.h
 
-counters.o: counters.h
+object.o: object.h
+
+maze.o: maze.h
+
+
+
+
 
 clean:
 	rm -rf *~ *.o *.dSYM

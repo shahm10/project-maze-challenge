@@ -35,7 +35,7 @@ void setHWall(object_t *obj) {
     obj->type = 2;
 }
 
-void setVWal(object_t *obj) {
+void setVWall(object_t *obj) {
     obj->type = 3;
 }
 

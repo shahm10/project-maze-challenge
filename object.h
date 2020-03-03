@@ -11,7 +11,7 @@ void setTile(object_t *obj);
 
 void setHWall(object_t *obj);
 
-void setVWal(object_t *obj);
+void setVWall(object_t *obj);
 
 void setCorner(object_t *obj);
 

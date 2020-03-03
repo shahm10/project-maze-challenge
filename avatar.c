@@ -16,6 +16,11 @@
 #include "counters.h"
 #include "avatar.h"
 #include "object.h"
+#include "maze.h"
+
+XYPos prev;
+int last_dir;
+bool first_turn = true;
 
 
 // initializes avatar (one of N threads)
@@ -75,43 +80,71 @@ int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int M
     printf("work\n");
 
     // Receive AM_AVATAR_TURN (avatarID, XYPos of all avatars)
-
         
-    printf("allocating maze components... \n");
-    int **maze;
-    visited = malloc(MazeHeight * sizeof(*visited));            //2x mazeheight +1
-    for (int i = 0; i<MazeHeight; i++){
-        visited[i] = malloc(MazeWidth*sizeof(*visited[i]));
+    printf("Initializing maze\n");
+    maze_t *maze = maze_new(MazeWidth, MazeHeight);
+
+    AM_Message turn_msg = getMessage(comm_sock);
+    while (ntohl(turn_msg.type) == AM_AVATAR_TURN) {
+        avatar_move(maze, turn_msg, AvatarID, nAvatars, comm_sock);
+        turn_msg = getMessage(comm_sock);
     }
 
-
-    // not freeing correctly
-    for (int i = 0; i<MazeHeight; i++){
-        free(visited[i]);
+    if (ntohl(turn_msg.type) == AM_MAZE_SOLVED) {
+        printf("Avatars found each other!\n");
     }
-    free(visited);
+
+    maze_delete(maze);
     
     close(comm_sock);
     printf("closing socket ... \n");
     return 0;
 }
 
+void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int comm_sock) 
+{
+    int TurnID = ntohl(msg.avatar_turn.TurnId);
+    if (TurnID % nAvatars == AvatarID) {
+        if (first_turn) {
+            first_turn = false;
+            prev = msg.avatar_turn.Pos[AvatarID];
+            if (sendMsg(comm_sock, AvatarID, 3)) {
+                printf("Initial move sent successfully\n");
+                last_dir = 3;
+            } else {
+                fprintf(stderr, "Initial move did not send successfully\n");
+            }
+        } else {
+            XYPos curr = msg.avatar_turn.Pos[AvatarID];
+            if (comparePos(prev, curr)) {
+                updateWall(maze, curr);
+                rotateDirection();
+            } else {
+                prev = curr;
+                if (sendMsg(comm_sock, AvatarID, last_dir)) {
+                    printf("Move sent successfully with direction %d\n", last_dir);
+                } else {
+                    fprintf(stderr, "Move with direction %d not sent successfully\n", last_dir);
+                }
+            }
+        }
 
-int choose_direction(object** maze, int last_direction)
+    }
+
+}
+
+void rotateDirection(void)
 {
     // FIRST MOVE
-    if (last_direction == NULL || last_direction == 1){
-        return 3; // M_EAST
-    } else if (last_direction == 0){
-        return 1; // M_NORTH
-    } else if (last_direction == 2) {
-        return 0; // M_WEST
-    } else if (last_direction == 3) {
-        return 2; // M_SOUTH
-    } else {
-        fprintf(stderr, "last direction is an invalid int\n");
-        return NULL;
-    }
+    if (last_dir == 3){
+        last_dir = 1; // Rotate to north
+    } else if (last_dir == 0){
+        last_dir = 2; // Rotate to south
+    } else if (last_dir == 1) {
+        last_dir = 0; // Rotate to west
+    } else if (last_dir == 2) {
+        last_dir = 3; // Rotate to east
+    } 
 }
 // assume right is east
 
@@ -125,6 +158,20 @@ bool comparePos(XYPos posA, XYPos posB)
         return true;
     }
     return false;
+}
+
+void updateWall(maze_t *maze, XYPos curr) {
+    int x = ntohl(curr.x) * 2 + 1;
+    int y = ntohl(curr.y) * 2 + 1;
+    if (last_dir == 3) {
+        setObj(maze, x+1, y, 3);
+    } else if (last_dir == 1) {
+        setObj(maze, x, y-1, 2);
+    } else if (last_dir == 2) {
+        setObj(maze, x, y+1, 2);
+    } else if (last_dir == 0) {
+        setObj(maze, x-1, y, 3);
+    }
 }
 
 
@@ -149,4 +196,26 @@ bool sendMsg(int comm_sock, int avatarID, int direction)
         exit (5);
     } 
     return true;
+}
+
+AM_Message getMessage(int comm_sock) {
+
+    AM_Message servermsg;
+    int receive = 0;
+    receive = recv(comm_sock, &servermsg, sizeof(AM_Message), 0);
+    if (receive < 0) {
+        fprintf (stderr, "Error: cannot receive message\n");
+        exit (6);               // not sure that this should be exit/return FIX
+    }
+
+    if (receive == 0) {
+        fprintf (stderr, "Error: connection closed\n");
+        exit (7);               // not sure that this should be exit/return FIX
+    }
+    printf ("Received message from server \n");
+
+    // Receive AM_MAZE_SOLVED
+
+    return servermsg;
+
 }
