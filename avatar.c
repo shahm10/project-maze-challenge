@@ -18,6 +18,10 @@
 #include "object.h"
 #include "maze.h"
 
+#include <pthread.h>
+pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+
+
 XYPos prev;
 int last_dir;
 bool first_turn = true;
@@ -85,13 +89,18 @@ int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int M
     maze_t *maze = maze_new(MazeWidth, MazeHeight);
 
     AM_Message turn_msg = getMessage(comm_sock);
+    int i = 0;
     while (ntohl(turn_msg.type) == AM_AVATAR_TURN) {
+        printf("iteration %d \n", i);
+    // while (ntohl( getMessage(comm_sock).type) == AM_AVATAR_TURN) {
         avatar_move(maze, turn_msg, AvatarID, nAvatars, comm_sock);
         turn_msg = getMessage(comm_sock);
     }
 
     if (ntohl(turn_msg.type) == AM_MAZE_SOLVED) {
         printf("Avatars found each other!\n");
+    } else {
+        printf("maze not solved \n");
     }
 
     maze_delete(maze);
@@ -103,6 +112,7 @@ int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int M
 
 void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int comm_sock) 
 {
+      pthread_mutex_lock(&mutex1);
     int TurnID = ntohl(msg.avatar_turn.TurnId);
     if (TurnID % nAvatars == AvatarID) {
         if (first_turn) {
@@ -127,10 +137,11 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
                     fprintf(stderr, "Move with direction %d not sent successfully\n", last_dir);
                 }
             }
+            printf("x: %d y: %d\n", ntohl(curr.x), ntohl(curr.y));
         }
 
     }
-
+  pthread_mutex_unlock(&mutex1);
 }
 
 void rotateDirection(void)
@@ -186,7 +197,7 @@ bool sendMsg(int comm_sock, int avatarID, int direction)
     printf("%d, direction : %d\n ", avatarID, direction);
     // msg.avatar_move.Direction = htonl(direction);
     
-    msg.avatar_move.Direction = (direction);
+    msg.avatar_move.Direction = htonl(direction);
 
     //try to send the move message to the server
     printf ("Try to send the AM_AVATAR_MOVE message to the server... \n");
