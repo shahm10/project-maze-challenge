@@ -25,13 +25,13 @@ maze_t *maze_new(const int width, const int height) {
 
     mz->grid = malloc(mz->height * sizeof(*mz->grid));
     for (int i = 0; i < mz->height; i++) {
-        printf("Coordinate: %d\n", i);
+        // printf("Coordinate: %d\n", i);
         mz->grid[i] = malloc(mz->width*sizeof(object_t**));
     }
     
     for (int i = 0; i < mz->width; i++) {
         for (int j = 0; j < mz->height; j++) {
-            mz->grid[i][j] = object_new();
+            mz->grid[j][i] = object_new();
         }
     }
 
@@ -97,7 +97,7 @@ void maze_delete(maze_t *mz) {
 
     for (int i = 0; i < mz->width; i++) {
         for (int j = 0; j < mz->height; j++) {
-            object_delete(mz->grid[i][j]);
+            object_delete(mz->grid[j][i]);
         }
     }
 
