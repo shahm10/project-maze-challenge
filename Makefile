@@ -9,7 +9,7 @@ OBJS = AMSTARTUP.o avatar.o counters.o
 # LLIBS = avatar.h counters.h
 
 FLAGS = # 
-CFLAGS = -Wall -pedantic -std=c11 -ggdb $(FLAGS)
+CFLAGS = -Wall -pedantic -std=c11 -ggdb $(FLAGS) -lpthread
 CC = gcc
 MAKE = make
 # for memory-leak tests
