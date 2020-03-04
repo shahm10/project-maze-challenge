@@ -21,7 +21,7 @@
 int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int MazePort, int MazeHeight, int MazeWidth, char* logname) ;
 // bool avatar_move(int AvatarID, int comm_sock, int MazeWidth, int MazeHeight, int visited[MazeHeight][MazeWidth], int direction, XYPos currPos, XYPos destination);
 
-void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int comm_sock); 
+void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int comm_sock, FILE *fp);
 
 
 void rotateDirection(void);
