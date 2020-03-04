@@ -41,6 +41,7 @@ maze_t *maze_new(const int width, const int height)
     for (int i = 0; i < mz->width; i++) {
         for (int j = 0; j < mz->height; j++) {
             mz->grid[j][i] = object_new();
+            setTile(mz->grid[j][i]);
         }
     }
 
@@ -80,8 +81,16 @@ maze_t *maze_new(const int width, const int height)
         }
     }
 
+    // Set the center corners
+    for (int i = 1; i < mz->height; i++) {
+        for (int j = 1; j < mz->width; j++) {
+            if (i % 2 == 0 && j % 2 == 0) {
+                setCorner(mz->grid[i][j]);
+            }
+        }
+    }
+    
     return mz;
-
 }
 
 int getTile(maze_t *mz, int x, int y)
