@@ -96,10 +96,11 @@ int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int M
         // printf("iteration %d \n", i);
         // i++;
         avatar_move(maze, turn_msg, AvatarID, nAvatars, comm_sock, fp);
-        pthread_mutex_unlock(&mutex1);}
+        pthread_mutex_unlock(&mutex1);
+        }
 
         turn_msg = getMessage(comm_sock);
-       // break;
+        //break;
     }
     if (ntohl(turn_msg.type) == AM_AVATAR_OUT_OF_TURN){
         printf("Out of turn \n");
