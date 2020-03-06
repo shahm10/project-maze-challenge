@@ -162,15 +162,8 @@ main(const int argc, char *argv[])
     timeptr = localtime(&currentime);
     fprintf(fp, "%s, %d, %s", user, ntohl(servermsg.init_ok.MazePort), asctime(timeptr));
   
-  
-
-    //Start the n copies of avatar client
-    //avatar_new(0, nAvatars, difficulty, "flume.cs.dartmouth.edu", mazeport, mazeheight, mazewidth, logname);
-
-
     fclose (fp);
   }
-    
 //     6. Need to initiate the avatars & start up N threads 
   pthread_t arraythread[nAvatars];
   for (int i = 0; i < nAvatars; i++) {
@@ -184,9 +177,10 @@ main(const int argc, char *argv[])
   }
   for (int j = 0; j < nAvatars; j++) {
     pthread_join (arraythread[j], NULL);
+      printf("iteration %d\n", j);
     //can change the NULL to exit status later
   }
-
+  printf("havent closed comm_sock yet\n");
     // // Allocating space for the name of the thread
     // char thread_name[50];
     // bag_t* thread_bag = bag_new();
@@ -218,11 +212,9 @@ main(const int argc, char *argv[])
     //need to clean up and free everything
     close(comm_sock);
     exit (5);
-  }
+  }  
 
-  
-
-  
+  printf("havent closed comm_sock yet\n");
   close(comm_sock);
 
 
@@ -238,6 +230,7 @@ void* initiate_avatar(void* arg)
   // Start new avatar
   printf("%s\n", logname);
   avatar_new(id_num, nAvatars, difficulty, hostname, mazeport, mazeheight, mazewidth, logname);
+  printf("initiated avatar \n");
 
   return NULL;
 }
