@@ -29,6 +29,7 @@ int rotateDirection(void);
 bool comparePos(XYPos posA, XYPos posB);
 
 void updateWall(maze_t *maze, XYPos curr);
+bool checkWall(maze_t* maze, XYPos curr, int direction);
 // XYPos getNextPos(XYPos curr, int direction);
 bool sendMsg(int comm_sock, int avatarID);
 
