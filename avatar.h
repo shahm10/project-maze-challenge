@@ -24,12 +24,13 @@ int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int M
 void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int comm_sock, FILE *fp);
 
 
-void rotateDirection(void);
+int rotateDirection(void);
 
 bool comparePos(XYPos posA, XYPos posB);
 
 void updateWall(maze_t *maze, XYPos curr);
+bool checkWall(maze_t* maze, XYPos curr, int direction);
 // XYPos getNextPos(XYPos curr, int direction);
-bool sendMsg(int comm_sock, int avatarID, int direction);
+bool sendMsg(int comm_sock, int avatarID);
 
 AM_Message getMessage(int comm_sock);

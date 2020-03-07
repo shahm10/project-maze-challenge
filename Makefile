@@ -37,4 +37,4 @@ clean:
 	rm -rf *~ *.o *.dSYM
 	rm -f $(PROGS) 
 	rm -f vgcore.* core
-
+	rm -f *.log
