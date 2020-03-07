@@ -41,7 +41,7 @@
   int mazewidth;
   int mazeheight;
   char logname[200];
-  maze_t *maze;
+  maze_t *maze; // map to be shared by all the avatars
 
 
 void* initiate_avatar(void* id_num_pointer);
@@ -168,7 +168,9 @@ main(const int argc, char *argv[])
     fclose (fp);
   }
 
+// Initialize map that will be shared by all avatars
 maze = maze_new(mazewidth, mazeheight);
+
 //     6. Need to initiate the avatars & start up N threads 
   pthread_t arraythread[nAvatars];
   for (int i = 0; i < nAvatars; i++) {
@@ -186,31 +188,6 @@ maze = maze_new(mazewidth, mazeheight);
     //can change the NULL to exit status later
   }
   printf("havent closed comm_sock yet\n");
-    // // Allocating space for the name of the thread
-    // char thread_name[50];
-    // bag_t* thread_bag = bag_new();
-
-    // // Making the threads
-    // for (int i = 1; i <= nAvatars; i++) {
-    //   // Making unique name for the thread
-    //   sprintf(thread_name, "thread_%d", i);
-
-    //   // Creation of the thread
-    //   pthread_t *thread_name;
-    //   void* id_number = &i;
-    //   int check = pthread_create(&*thread_name, NULL, initiate_avatar, id_number);
-
-    //   // If unsuccesful in creating thread
-    //   if (check != 0) {
-    //     // Print error message and exit
-    //     printf("Error: Could not produce avatar client.\n");
-    //     exit(8);
-    //   }
-
-    //   bag_insert(thread_bag, *thread_name);
-      
-    // }
-  //}
 
   if (ntohl (servermsg.type) == AM_INIT_FAILED) {
     fprintf (stderr, "\nInitialization failed.\n");
@@ -218,7 +195,10 @@ maze = maze_new(mazewidth, mazeheight);
     close(comm_sock);
     exit (5);
   }  
+
+  // Delete map
   maze_delete(maze);
+
   printf("havent closed comm_sock yet\n");
   close(comm_sock);
 

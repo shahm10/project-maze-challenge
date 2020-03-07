@@ -1,6 +1,11 @@
-/*
- * Client program
+/* 
+ * avatar.c module
  * 
+ * An 'avatar' contains all the code for initializing an individual
+ * avatar and reading server messsages. It has an algorithm for navigating the maze
+ * and any helper functions to help it achieve this goal.
+ *
+ * CS50 Winter 2020
  */
 
 #include <stdio.h>
@@ -13,7 +18,6 @@
 #include <sys/socket.h>
 
 #include "amazing.h"
-#include "counters.h"
 #include "avatar.h"
 #include "object.h"
 #include "maze.h"
@@ -21,17 +25,43 @@
 #include <pthread.h>
 #include <threads.h>
 
+/*** Global variables ****/
+
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
-thread_local XYPos prev;
-thread_local bool foundFriend = false;
-thread_local int last_dir = -1;   // need to make this thread-specific
+
+thread_local XYPos prev; // tracks avatar's last position
+
+thread_local int last_dir = -1;  // tracks avatar's last direction
+
+/*  direction and righthand
+ *  direction tracks avatar's forward direction
+ *  righthand tracks avatar's righthand direction
+ *  righthand is always 90 degrees clockwise of direction
+ */
 thread_local int direction = -1;
-thread_local int righthand = -1;
-int destination_x;
+thread_local int righthand = -1; 
+
+/* 
+ * Once avatar reaches destination, stop moving
+ */
+int destination_x; 
 int destination_y;
 
 
-// initializes avatar (one of N threads)
+/**************** avatar_new ****************/
+/* Create a new avatar and initialize its thread
+ *
+ * Caller provides:
+ *   valid pointer to maze, the avatar's ID, number of total avatars,
+ *   difficulty of the maze, server hostname, the port to connect to,
+ *   height and width of the maze, and a target log file
+ * We return:
+ *   0 if initialized correctly
+ * We do:
+ *   Connect a socket to the server
+ *   Initialize all variables for the avatar
+ *   Call avatar_move
+ */
 int avatar_new(maze_t *maze, int AvatarID, int nAvatars, int Difficulty, char* hostname, int MazePort, int MazeHeight, int MazeWidth, char *logname) 
 {
     printf("Number of avatars: %d \n", nAvatars);
@@ -87,25 +117,28 @@ int avatar_new(maze_t *maze, int AvatarID, int nAvatars, int Difficulty, char* h
     // Receive AM_AVATAR_TURN (avatarID, XYPos of all avatars)
         
     printf("Initializing maze\n");
-    //maze = maze_new(MazeWidth, MazeHeight);
 
+    // Set destination to top-right corner of maze
     destination_x = getMazeWidth(maze)-1;
     destination_y = 0;
-
     last_dir = -1;
+
     AM_Message turn_msg = getMessage(comm_sock);
-    // int i = 0;
+
+    // While server keeps sending us turn message
     while ( ntohl(turn_msg.type) == AM_AVATAR_TURN){
+        // Only tell this avatar to move when it is its turn
         int TurnID = ntohl(turn_msg.avatar_turn.TurnId);   
         if (TurnID == AvatarID) {
+            // Lock functions to this avatar and call move function
             pthread_mutex_lock(&mutex1);
             avatar_move(maze, turn_msg, AvatarID, nAvatars, comm_sock, fp);
             pthread_mutex_unlock(&mutex1);
-        // } else {
-            // turn_msg = getMessage(comm_sock);
         }
         turn_msg = getMessage(comm_sock);
     }
+
+    // Handle all error messages from server
     if (ntohl(turn_msg.type) == AM_AVATAR_OUT_OF_TURN){
         printf("Out of turn \n");
     } else if (ntohl(turn_msg.type) == AM_UNKNOWN_MSG_TYPE){
@@ -118,34 +151,54 @@ int avatar_new(maze_t *maze, int AvatarID, int nAvatars, int Difficulty, char* h
         printf("too many moves \n");
     }
 
+    // Prints when server returns maze solved message
     if (ntohl(turn_msg.type) == AM_MAZE_SOLVED) {
         printf("Avatars found each other!\n");
     } else {
         printf("maze not solved \n");
     }
-
-    //maze_delete(maze);
     
+    // Close socket
     close(comm_sock);
     printf("closing socket ... \n");
     return 0;
 }
 
+/**************** avatar_move ****************/
+/* Contains algorithm for navigating the maze
+ *
+ * Caller provides:
+ *   valid pointer to maze, server message, this avatar's ID,
+ *   number of total avatars, communication socket, and log file
+ *
+ * We do:
+ *   Parse information received from the server
+ *   Choose the avatar's next move and send to server
+ */
 void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int comm_sock, FILE *fp) 
 {
-    // int TurnID = ntohl(msg.avatar_turn.TurnId);
     fprintf (fp, "AvatarID: %i\n", AvatarID);
+
+    // If this iteration is the avatar's first turn
     if (last_dir == -1) {
+
+        //Track X and Y for avatar's previous position
         prev = msg.avatar_turn.Pos[AvatarID];
         int initial_x = ntohl(prev.x);
         int initial_y = ntohl(prev.y);
+        
+        // Check whether avatar was placed at destination
         if (destination_x == initial_x && destination_y == initial_y) {
+            // Send "east" repeatedly so that avatar does not move
             if (sendMsg(comm_sock, AvatarID, 3)) {
                 printf("%d Initial move sent successfully\n", AvatarID);
             } else {
                 fprintf(stderr, "Initial move did not send successfully\n");
             }
+
+        // If avatar was not placed at destination
         } else {
+            // Avatar's initial move will be south
             last_dir = 2;
             righthand = 2;
             direction = 3;
@@ -155,28 +208,40 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
                 fprintf(stderr, "Initial move did not send successfully\n");
             }
         }
-    } else {
-        XYPos curr = msg.avatar_turn.Pos[AvatarID];
 
+    // If this iteration is not the avatar's first turn
+    } else {
+
+        // Track X and Y for avatar's current position
+        XYPos curr = msg.avatar_turn.Pos[AvatarID];
         int x = ntohl(msg.avatar_turn.Pos[AvatarID].x);
         int y = ntohl(msg.avatar_turn.Pos[AvatarID].y);
 
+        // Check whether avatar has reached destination
         if (destination_x == x && destination_y == y) {
+            // Send "east" repeatedly so that avatar does not move
             if (sendMsg(comm_sock, AvatarID, 3)) {
                 printf("Move sent successfully with direction 3 by avatar %d\n", AvatarID);
             } else {
                 fprintf(stderr, "Move with direction 3 not sent successfully\n");
             }
         } else {
+
+            // Previous position's X and Y
             int px = ntohl(prev.x);
             int py = ntohl(prev.y);
 
             fprintf(fp, "Current position of Avatar %i: %d, %d\n", AvatarID, x, y);        
             fprintf(fp, "Current position of Avatar %i: %d, %d\n", AvatarID, ntohl(curr.x), ntohl(curr.y));
 
-            // if the avatar has not moved, add a wall and change direction
+            /* Compare previous and current positions
+             * if the avatar has not moved, add a wall and change direction
+            */
             if (px == x && py == y) {
+                // Add a wall to global map based on last direction
                 updateWall(maze, curr);
+
+                // If avatar last tried moving right, try moving forward
                 if (last_dir == righthand) {
                     last_dir = direction;
                     if (sendMsg(comm_sock, AvatarID, direction)) {
@@ -185,7 +250,11 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
                         fprintf(stderr, "Move with direction %d not sent successfully\n", direction);
                     } 
                     printf("x: %d y: %d\n", ntohl(curr.x), ntohl(curr.y));
-                    
+
+                /* 
+                 * If avatar has tried moving forward and right, rotate directions
+                 * 90 degrees counter-clockwise and try moving right again   
+                */ 
                 } else if (last_dir == direction) {
                     rotateLeft();
                     last_dir = righthand;
@@ -197,22 +266,36 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
                     } 
                 }
                 printf("x: %d y: %d\n", ntohl(curr.x), ntohl(curr.y));
+
+            // If avatar successfully moved on last move
             } else {
+                /* If avatar's successfully moved right, make this
+                 * the avatar's new righthand direction
+                 */ 
                 if (last_dir == righthand) {
                     rotateRight();
                 }
+
+                // Update previous position and set equal to current
                 prev = curr;
+
+                // If avatar can see that a wall is to its right
                 if (checkWall(maze, curr, righthand)) {
+                    // If both forward and right have walls, rotate 90 degrees
                     while (checkWall(maze, curr, direction)) {
                         rotateLeft();
                     }
+                    // If there is a wall on the right, try moving forward
                     last_dir = direction;
                     if (sendMsg(comm_sock, AvatarID, direction)) {
                         printf("Move sent successfully with direction %d by avatar %d\n", direction, AvatarID);
                     } else {
                         fprintf(stderr, "Move with direction %d not sent successfully\n", direction);
                     } 
+
+                // If avatar cannot see a wall to the right
                 } else {
+                    // Attempt to move right
                     last_dir = righthand;
                     if (sendMsg(comm_sock, AvatarID, righthand)) {
                         printf("Move sent successfully with direction %d by avatar %d\n", righthand, AvatarID);
@@ -225,122 +308,139 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
         }
     }
     printf("destination x: %d, y: %d\n", destination_x, destination_y);
-    //maze_print(maze);
+    maze_print(maze);
 }
 
+/**************** rotateRight ****************/
+/* Rotates avatar's forward and righthand directions 90
+ * degrees clockwise
+*/
 void rotateRight(void) {
+
+    // Rotate forward direction
     if (direction == 3){
-        direction = 2; // Rotate to north
+        direction = 2; // Rotate from east to south
     } else if (direction == 0){
-        direction = 1; // Rotate to south
+        direction = 1; // Rotate from west to north
     } else if (direction == 1) {
-        direction = 3; // Rotate to west
+        direction = 3; // Rotate from north to east
     } else if (direction == 2) {
-        direction = 0; // Rotate to east
+        direction = 0; // Rotate from south to west
+    } 
+    
+    // Rotate righthand directon
+    if (righthand == 3){
+        righthand = 2; // Rotate from east to south
+    } else if (righthand == 0){
+        righthand = 1; // Rotate from west to north
+    } else if (righthand == 1) {
+        righthand = 3; // Rotate from north to east
+    } else if (righthand == 2) {
+        righthand = 0; // Rotate from south to west
     } 
 
-    if (righthand == 3){
-        righthand = 2; // Rotate to north
-    } else if (righthand == 0){
-        righthand = 1; // Rotate to south
-    } else if (righthand == 1) {
-        righthand = 3; // Rotate to west
-    } else if (righthand == 2) {
-        righthand = 0; // Rotate to east
-    } 
 }
 
+/**************** rotateLeft ****************/
+/* Rotates avatar's forward and righthand directions 90
+ * degrees counterclockwise
+*/
 void rotateLeft(void)
 {
 
     if (direction == 3){
-        direction = 1; // Rotate to north
+        direction = 1; // Rotate from east to north
     } else if (direction == 0){
-        direction = 2; // Rotate to south
+        direction = 2; // Rotate from west to south
     } else if (direction == 1) {
-        direction = 0; // Rotate to west
+        direction = 0; // Rotate from north to west
     } else if (direction == 2) {
-        direction = 3; // Rotate to east
+        direction = 3; // Rotate from south to east
     } 
 
     if (righthand == 3){
-        righthand = 1; // Rotate to north
+        righthand = 1; // Rotate from east to north
     } else if (righthand == 0){
-        righthand = 2; // Rotate to south
+        righthand = 2; // Rotate from west to south
     } else if (righthand == 1) {
-        righthand = 0; // Rotate to west
+        righthand = 0; // Rotate from north to west
     } else if (righthand == 2) {
-        righthand = 3; // Rotate to east
+        righthand = 3; // Rotate from south to east
     }
 }
 
-int rotateDirection(void)
-{
-    // FIRST MOVE
-    if (last_dir == 3){
-        last_dir = 1; // Rotate to north
-    } else if (last_dir == 0){
-        last_dir = 2; // Rotate to south
-    } else if (last_dir == 1) {
-        last_dir = 0; // Rotate to west
-    } else if (last_dir == 2) {
-        last_dir = 3; // Rotate to east
-    } 
-    return last_dir;
-}
-// assume right is east
-
-/*
- * Returns false if positions are different
- * returns true if positions are same 
+/**************** updateWall ****************/
+/* Adds a wall to map based on current position and
+ * last-attempted direction
+ *
+ * Caller provides:
+ *   valid pointer to maze, current position
  */
-bool comparePos(XYPos posA, XYPos posB) 
-{
-    if (posA.x == posB.x && posA.y == posB.y) {
-        return true;
-    }
-    return false;
-}
-
 void updateWall(maze_t *maze, XYPos curr) {
+
     int col = ntohl(curr.x) * 2 + 1;
     int row = ntohl(curr.y) * 2 + 1;
-    if (last_dir == 3) {        
+
+    if (last_dir == 3) { // Add a wall to the east
         setObj(maze, row, col+1, 3);
-    } else if (last_dir == 1) {
+    } else if (last_dir == 1) { // Add a wall to the north
         setObj(maze, row-1, col, 2);
-    } else if (last_dir == 2) {
+    } else if (last_dir == 2) { // Add a wall to the south
         setObj(maze, row+1, col, 2);
-    } else if (last_dir == 0) {
+    } else if (last_dir == 0) { // Add a wall to the west
         setObj(maze, row, col-1, 3);
     }
+
 }
 
+/**************** checkWall ****************/
+/* Checks if a wall exists given current position and
+ * desired direction
+ * last-attempted direction
+ *
+ * Caller provides:
+ *   valid pointer to maze, current position, desired direction
+ *
+ * We return:
+ *   true if a wall exists and false otherwise
+ */
 bool checkWall(maze_t* maze, XYPos curr, int direction)
 {
+
     int col = ntohl(curr.x) * 2 + 1;
     int row = ntohl(curr.y) * 2 + 1;
-    if (direction == 3) {
+
+    if (direction == 3) { // If a wall exists to the east
         if (getTile(maze, row, col+1) == 3) {
             return true;
         }
-    } else if (direction == 1) {
+    } else if (direction == 1) { // If a wall exists to the north
         if (getTile(maze, row-1, col) == 2) {
             return true;
         }
-    } else if (direction == 2) {
+    } else if (direction == 2) { // If a wall exists to the south
         if (getTile(maze, row+1, col) == 2) {
             return true;
         }
-    } else if (direction == 0) {
+    } else if (direction == 0) { // If a wall exists to the west
         if (getTile(maze, row, col-1) == 3) {
             return true;
         }
     }
+
     return false;
+
 }
 
-
+/**************** sendMsg ****************/
+/* Sends AM_AVATAR_MOVE message to server
+ *
+ * Caller provides:
+ *   communication socket, this avatar's ID, and desired direction
+ *
+ * We return:
+ *   true if successful
+ */
 bool sendMsg(int comm_sock, int avatarID, int direction) 
 {
     // 4. write to socket
@@ -359,6 +459,15 @@ bool sendMsg(int comm_sock, int avatarID, int direction)
     return true;
 }
 
+/**************** getMessage ****************/
+/* Receives message to server
+ *
+ * Caller provides:
+ *   communication socket
+ *
+ * We return:
+ *   message that server provides
+ */
 AM_Message getMessage(int comm_sock) {
 
     AM_Message servermsg;
@@ -366,19 +475,14 @@ AM_Message getMessage(int comm_sock) {
     receive = recv(comm_sock, &servermsg, sizeof(servermsg), 0);
     if (receive < 0) {
         fprintf (stderr, "Error: cannot receive message\n");
-        exit (6);               // not sure that this should be exit/return FIX
+        exit (6);               // Error receiving message
     }
 
     if (receive == 0) {
         fprintf (stderr, "Error: connection closed\n");
-        exit (7);               // not sure that this should be exit/return FIX
+        exit (7);               // Error receiving message
     }
     printf ("Received message from server \n");
-
-    // Receive AM_MAZE_SOLVED
-    // XYPos curr = (servermsg.avatar_turn.Pos[1]);
-    // printf("IN GET_MESSAGE x pos: %d \n", ntohl(curr.x));
-    // int x = ntohl(msg.avatar_turn.Pos[AvatarID].x);
 
     return servermsg;
 
