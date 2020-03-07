@@ -15,4 +15,6 @@ void setVWall(object_t *obj);
 
 void setCorner(object_t *obj);
 
+void setAvatar(object_t *obj);
+
 void object_delete(object_t *obj);

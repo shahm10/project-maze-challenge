@@ -9,6 +9,7 @@ Types:
 2 is a horizontal wall
 3 is a vertical wall
 4 is a corner
+5 is an avatar
 */
 
 // Object definition
@@ -102,15 +103,25 @@ void setObj(maze_t *mz, int x, int y, int type)
 {
 
     if (type == 1) {
-        setTile(mz->grid[y][x]);
+        setTile(mz->grid[x][y]);
     } else if (type == 2) {
-        setHWall(mz->grid[y][x]);
+        setHWall(mz->grid[x][y]);
     } else if (type == 3) {
-        setVWall(mz->grid[y][x]);
+        setVWall(mz->grid[x][y]);
     } else if (type == 4) {
-        setCorner(mz->grid[y][x]);
+        setCorner(mz->grid[x][y]);
+    } else if (type == 5) {
+        setAvatar(mz->grid[x][y]);
     }
 
+}
+
+int getMazeWidth(maze_t *mz) {
+    return (mz->width-1)/2;
+}
+
+int getMazeHeight(maze_t *mz) {
+    return (mz->height-1)/2;
 }
 
 void maze_delete(maze_t *mz)
@@ -159,4 +170,5 @@ void maze_print(maze_t* mz)
         // Move onto the next row
         printf("\n");
     }
+    printf("maze width: %d, height: %d\n", mz->width, mz->height);
 }

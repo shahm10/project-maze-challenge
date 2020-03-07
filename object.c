@@ -43,6 +43,10 @@ void setCorner(object_t *obj) {
     obj->type = 4;
 }
 
+void setAvatar(object_t *obj) {
+    obj->type = 5;
+}
+
 void object_delete(object_t *obj) {
     free(obj);
 }

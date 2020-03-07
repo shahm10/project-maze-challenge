@@ -18,11 +18,14 @@
 #include "object.h"
 
 
-int avatar_new(int AvatarID, int nAvatars, int Difficulty, char* hostname, int MazePort, int MazeHeight, int MazeWidth, char* logname) ;
+int avatar_new(maze_t *maze, int AvatarID, int nAvatars, int Difficulty, char* hostname, int MazePort, int MazeHeight, int MazeWidth, char* logname) ;
 // bool avatar_move(int AvatarID, int comm_sock, int MazeWidth, int MazeHeight, int visited[MazeHeight][MazeWidth], int direction, XYPos currPos, XYPos destination);
 
 void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int comm_sock, FILE *fp);
 
+void rotateRight(void);
+
+void rotateLeft(void);
 
 int rotateDirection(void);
 
@@ -31,6 +34,6 @@ bool comparePos(XYPos posA, XYPos posB);
 void updateWall(maze_t *maze, XYPos curr);
 bool checkWall(maze_t* maze, XYPos curr, int direction);
 // XYPos getNextPos(XYPos curr, int direction);
-bool sendMsg(int comm_sock, int avatarID);
+bool sendMsg(int comm_sock, int avatarID, int direction);
 
 AM_Message getMessage(int comm_sock);

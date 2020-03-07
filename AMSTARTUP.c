@@ -23,6 +23,8 @@
 #include "amazing.h"
 #include <time.h>
 #include <pthread.h>
+#include "object.h"
+#include "maze.h"
 
 #include "avatar.h"
 
@@ -39,6 +41,7 @@
   int mazewidth;
   int mazeheight;
   char logname[200];
+  maze_t *maze;
 
 
 void* initiate_avatar(void* id_num_pointer);
@@ -164,6 +167,8 @@ main(const int argc, char *argv[])
   
     fclose (fp);
   }
+
+maze = maze_new(mazewidth, mazeheight);
 //     6. Need to initiate the avatars & start up N threads 
   pthread_t arraythread[nAvatars];
   for (int i = 0; i < nAvatars; i++) {
@@ -213,7 +218,7 @@ main(const int argc, char *argv[])
     close(comm_sock);
     exit (5);
   }  
-
+  maze_delete(maze);
   printf("havent closed comm_sock yet\n");
   close(comm_sock);
 
@@ -229,7 +234,7 @@ void* initiate_avatar(void* arg)
   int id_num = (int) (intptr_t) arg;
   // Start new avatar
   printf("%s\n", logname);
-  avatar_new(id_num, nAvatars, difficulty, hostname, mazeport, mazeheight, mazewidth, logname);
+  avatar_new(maze, id_num, nAvatars, difficulty, hostname, mazeport, mazeheight, mazewidth, logname);
   printf("initiated avatar \n");
 
   return NULL;
