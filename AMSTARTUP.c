@@ -105,6 +105,7 @@ main(const int argc, char *argv[])
   // int bytes_read;       // #bytes read from socket
   // memset(buf, 0, BUFSIZE); // clear up the buffer
   AM_Message msg;
+  memset(&msg, 0, sizeof(AM_Message));
   msg.type = htonl(AM_INIT);
   msg.init.Difficulty = htonl(difficulty);
   msg.init.nAvatars = htonl(nAvatars);
