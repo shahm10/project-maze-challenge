@@ -105,12 +105,12 @@ main(const int argc, char *argv[])
   // int bytes_read;       // #bytes read from socket
   // memset(buf, 0, BUFSIZE); // clear up the buffer
   AM_Message msg;
+  memset(&msg, 0, sizeof(AM_Message));
   msg.type = htonl(AM_INIT);
   msg.init.Difficulty = htonl(difficulty);
   msg.init.nAvatars = htonl(nAvatars);
 
   //try to send the AM_INIT message to the server
-  printf ("Try to send the AM_INIT message to the server... \n");
   send(comm_sock, &msg, sizeof(AM_Message), 0);
   if (send(comm_sock, &msg, sizeof(AM_Message), 0) == -1) {
     fprintf (stderr, "Error: can't send message\n");
@@ -133,7 +133,6 @@ main(const int argc, char *argv[])
   printf ("Server connected\n");
 
   if (ntohl (servermsg.type) == AM_INIT_OK) {
-    printf ("AM_INIT successfully processed\n");
     mazeport =  ntohl(servermsg.init_ok.MazePort);
     mazewidth = ntohl(servermsg.init_ok.MazeWidth);
     mazeheight = ntohl(servermsg.init_ok.MazeHeight);
@@ -141,14 +140,14 @@ main(const int argc, char *argv[])
     // 5. Create the log file 
     FILE *fp;
     char *user = getenv ("USER");
-    sprintf (logname, "Amazing_%s_%d_%d.log", user, nAvatars, difficulty);
+    sprintf (logname, "./Results/Amazing_%s_%d_%d.log", user, nAvatars, difficulty);
 
-    printf("Creating a log file...\n");
     fp = fopen (logname, "w");
     if (fp == NULL) {
       fprintf (stderr, "Error: cannot create log file \n");
       exit (5);
     }
+    printf("Log file created!\n");
     
     // Get the time info for log files 
     time_t currentime;
@@ -161,14 +160,13 @@ main(const int argc, char *argv[])
     fclose (fp);
   }
 
-// Initialize map that will be shared by all avatars
-maze = maze_new(mazewidth, mazeheight);
+  // Initialize map that will be shared by all avatars
+  maze = maze_new(mazewidth, mazeheight);
 
-//     6. Need to initiate the avatars & start up N threads 
+  //     6. Need to initiate the avatars & start up N threads 
   pthread_t arraythread[nAvatars];
   for (int i = 0; i < nAvatars; i++) {
     int check = pthread_create(&arraythread[i], NULL, initiate_avatar, (void *) (intptr_t) i);
-    printf("creating thread %d\n", i);
     if (check) {
       fprintf (stderr, "thread not created \n");
       exit (3);
@@ -201,7 +199,6 @@ void* initiate_avatar(void* arg)
   // Storing number from the null pointer
   int id_num = (int) (intptr_t) arg;
   // Start new avatar
-  printf("%s\n", logname);
   avatar_new(maze, id_num, nAvatars, difficulty, hostname, mazeport, mazeheight, mazewidth, logname);
   // printf("initiated avatar \n");
 

@@ -64,7 +64,6 @@ int destination_y;
  */
 int avatar_new(maze_t *maze, int AvatarID, int nAvatars, int Difficulty, char* hostname, int MazePort, int MazeHeight, int MazeWidth, char *logname) 
 {
-    printf("Number of avatars: %d \n", nAvatars);
     // open socket
     int comm_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (comm_sock < 0) {
@@ -90,21 +89,19 @@ int avatar_new(maze_t *maze, int AvatarID, int nAvatars, int Difficulty, char* h
         perror("connecting stream socket");
         exit(4);
     }
-    printf("Avatar socket connected!\n");
 
     // send AM_AVATAR_READY
     AM_Message ready_msg;
+    memset(&ready_msg, 0, sizeof(AM_Message));
     ready_msg.type = htonl(AM_AVATAR_READY);
     ready_msg.avatar_ready.AvatarId = htonl(AvatarID);
 
     //try to send the AM_AVATAR_READY message to the server
-    printf ("Try to send the AM_AVATAR_READY message to the server... \n");
     if (send(comm_sock, &ready_msg, sizeof(AM_Message), 0) == -1) {
         close (comm_sock);
         fprintf (stderr, "Error: can't send message\n");
         exit (5);
     }
-    printf ("Ready message is sent\n");
 
     //Append to log file the avatar turn number 
     FILE *fp = fopen (logname, "a");
@@ -113,10 +110,6 @@ int avatar_new(maze_t *maze, int AvatarID, int nAvatars, int Difficulty, char* h
         exit (2);
     }
     fprintf (fp, "*******\n");
-
-    // Receive AM_AVATAR_TURN (avatarID, XYPos of all avatars)
-        
-    printf("Initializing maze\n");
 
     // Set destination to top-right corner of maze
     destination_x = getMazeWidth(maze)-1;
@@ -138,32 +131,33 @@ int avatar_new(maze_t *maze, int AvatarID, int nAvatars, int Difficulty, char* h
         turn_msg = getMessage(comm_sock);
     }
 
-    // Handle all error messages from server
+    // Handle error messages from server
     if (ntohl(turn_msg.type) == AM_AVATAR_OUT_OF_TURN){
-        printf("Out of turn \n");
+        fprintf(stdout, "Out of turn \n");
     } else if (ntohl(turn_msg.type) == AM_UNKNOWN_MSG_TYPE){
-        printf("unknown msg \n");
+        fprintf(stdout, "unknown msg \n");
     } else if (ntohl(turn_msg.type) == AM_AVATAR_TURN){
-        printf("turn \n");
+        fprintf(stdout, "turn \n");
     } else if (ntohl(turn_msg.type) == AM_UNEXPECTED_MSG_TYPE){
-        printf("unexpected msg \n");
+        fprintf(stdout, "unexpected msg \n");
     } else if (ntohl(turn_msg.type) == AM_TOO_MANY_MOVES) {
-        printf("too many moves \n");
+        fprintf(stdout, "too many moves \n");
     }
 
     // Prints when server returns maze solved message
     if (ntohl(turn_msg.type) == AM_MAZE_SOLVED) {
 
-        printf("Avatars found each other!\n");
+        fprintf(stdout, "Maze solved - avatars found each other!\n");
         fprintf(fp, "Maze is solved!\n");
 
     } else {
-        printf("maze not solved \n");
+        fprintf(stdout, "maze not solved \n");
     }
     
     // Close socket
     close(comm_sock);
-    printf("closing socket ... \n");
+    fclose(fp);
+    fprintf(stdout, "closing socket ... \n");
     return 0;
 }
 
@@ -197,9 +191,7 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
         // Check whether avatar was placed at destination
         if (destination_x == initial_x && destination_y == initial_y) {
             // Send "east" repeatedly so that avatar does not move
-            if (sendMsg(comm_sock, AvatarID, 3)) {
-                printf("%d Initial move sent successfully\n", AvatarID);
-            } else {
+            if (!sendMsg(comm_sock, AvatarID, 3)) {
                 fprintf(stderr, "Initial move did not send successfully\n");
             }
 
@@ -209,9 +201,7 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
             last_dir = 2;
             righthand = 2;
             direction = 3;
-            if (sendMsg(comm_sock, AvatarID, 2)) {
-                printf("%d Initial move sent successfully\n", AvatarID);
-            } else {
+            if (!sendMsg(comm_sock, AvatarID, 2)) {
                 fprintf(stderr, "Initial move did not send successfully\n");
             }
         }
@@ -227,9 +217,7 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
         // Check whether avatar has reached destination
         if (destination_x == x && destination_y == y) {
             // Send "east" repeatedly so that avatar does not move
-            if (sendMsg(comm_sock, AvatarID, 3)) {
-                // printf("Move sent successfully with direction 3 by avatar %d\n", AvatarID);
-            } else {
+            if (!sendMsg(comm_sock, AvatarID, 3)) {
                 fprintf(stderr, "Move with direction 3 not sent successfully\n");
             }
         } else {
@@ -250,9 +238,7 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
                 // If avatar last tried moving right, try moving forward
                 if (last_dir == righthand) {
                     last_dir = direction;
-                    if (sendMsg(comm_sock, AvatarID, direction)) {
-                        printf("Move sent successfully with direction %d by avatar %d\n", direction, AvatarID);
-                    } else {
+                    if (!sendMsg(comm_sock, AvatarID, direction)) {
                         fprintf(stderr, "Move with direction %d not sent successfully\n", direction);
                     } 
 
@@ -263,14 +249,10 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
                 } else if (last_dir == direction) {
                     rotateLeft();
                     last_dir = righthand;
-                    if (sendMsg(comm_sock, AvatarID, righthand)) {
-                        printf("Move sent successfully with direction %d by avatar %d\n", righthand, AvatarID);
-                        
-                    } else {
+                    if (!sendMsg(comm_sock, AvatarID, righthand)) {
                         fprintf(stderr, "Move with direction %d not sent successfully\n", righthand);
                     } 
                 }
-                printf("x: %d y: %d\n", ntohl(curr.x), ntohl(curr.y));
 
             // If avatar successfully moved on last move
             } else {
@@ -293,9 +275,7 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
                     }
                     // If there is a wall on the right, try moving forward
                     last_dir = direction;
-                    if (sendMsg(comm_sock, AvatarID, direction)) {
-                        // printf("Move sent successfully with direction %d by avatar %d\n", direction, AvatarID);
-                    } else {
+                    if (!sendMsg(comm_sock, AvatarID, direction)) {
                         fprintf(stderr, "Move with direction %d not sent successfully\n", direction);
                     } 
 
@@ -303,9 +283,7 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
                 } else {
                     // Attempt to move right
                     last_dir = righthand;
-                    if (sendMsg(comm_sock, AvatarID, righthand)) {
-                        // printf("Move sent successfully with direction %d by avatar %d\n", righthand, AvatarID);
-                    } else {
+                    if (!sendMsg(comm_sock, AvatarID, righthand)) {
                         fprintf(stderr, "Move with direction %d not sent successfully\n", righthand);
                     }
                 }
@@ -398,12 +376,14 @@ void updateWall(maze_t *maze, XYPos curr) {
 
 }
 
+/************ updateAvatar() ************/
 void updateAvatar(maze_t *maze, XYPos curr) {
     int col = ntohl(curr.x) * 2 + 1;
     int row = ntohl(curr.y) * 2 + 1;
     setObj(maze, row, col, 5);
 }
 
+/************ removeAvatar() ************/
 void removeAvatar(maze_t *maze, XYPos prev) {
     int col = ntohl(prev.x) * 2 + 1;
     int row = ntohl(prev.y) * 2 + 1;
@@ -462,13 +442,12 @@ bool sendMsg(int comm_sock, int avatarID, int direction)
 {
     // 4. write to socket
     AM_Message msg;
+    memset(&msg, 0, sizeof(AM_Message));
     msg.type = htonl(AM_AVATAR_MOVE);
     msg.avatar_move.AvatarId = htonl(avatarID);
     msg.avatar_move.Direction = htonl(direction); 
-    // printf("avatarId:%d, direction : %d\n ", avatarID, direction);
 
     //try to send the move message to the server
-    // printf ("Try to send the AM_AVATAR_MOVE message to the server... \n");
     if (send(comm_sock, &msg, sizeof(msg), 0) == -1) {
         fprintf (stderr, "Error: can't send message\n");
         exit (5);
@@ -499,7 +478,6 @@ AM_Message getMessage(int comm_sock) {
         fprintf (stderr, "Error: connection closed\n");
         exit (7);               // Error receiving message
     }
-    // printf ("Received message from server \n");
 
     return servermsg;
 

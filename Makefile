@@ -6,7 +6,6 @@
 
 PROGS = AMSTARTUP
 OBJS = AMSTARTUP.o avatar.o object.o maze.o
-# LLIBS = avatar.h counters.h
 
 FLAGS = # 
 CFLAGS = -Wall -pedantic -std=c11 -ggdb $(FLAGS) -lpthread
@@ -18,8 +17,8 @@ VALGRIND = valgrind --leak-check=full --show-leak-kinds=all
 all: $(PROGS) $(OBJS)
 
 ########### inclient ##################
-AMSTARTUP: $(OBJS) $(LLIBS)
-	$(CC) $(CFLAGS) $^ $(LLIBS) -o $@
+AMSTARTUP: $(OBJS)
+	$(CC) $(CFLAGS) $^ -o $@
 
 AMSTARTUP.o: 
 
@@ -30,11 +29,8 @@ object.o: object.h
 maze.o: maze.h
 
 
-
-
-
 clean:
 	rm -rf *~ *.o *.dSYM
 	rm -f $(PROGS) 
 	rm -f vgcore.* core
-	rm -f *.log
+	rm -f ./Results/*.log

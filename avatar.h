@@ -71,10 +71,23 @@ void rotateLeft(void);
  */
 void updateWall(maze_t *maze, XYPos curr);
 
+/**************** updateAvatar **************/
+/*
+ * Adds an avatar to maze map based on current position
+ * 
+ * Caller provides:
+ *   valid pointer to maze, current position
+ */
 void updateAvatar(maze_t *maze, XYPos curr);
 
+/*************** removeAvatar **************/
+/*
+ * Removes avatar from maze map based on previous position
+ * 
+ * Caller provides:
+ *  valid pointer to maze, previous position 
+ */
 void removeAvatar(maze_t *maze, XYPos prev);
-
 
 /**************** checkWall ****************/
 /* Checks if a wall exists given current position and
