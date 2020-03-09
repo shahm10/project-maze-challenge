@@ -94,6 +94,7 @@ int avatar_new(maze_t *maze, int AvatarID, int nAvatars, int Difficulty, char* h
 
     // send AM_AVATAR_READY
     AM_Message ready_msg;
+    memset(&ready_msg, 0, sizeof(AM_Message));
     ready_msg.type = htonl(AM_AVATAR_READY);
     ready_msg.avatar_ready.AvatarId = htonl(AvatarID);
 
@@ -163,7 +164,7 @@ int avatar_new(maze_t *maze, int AvatarID, int nAvatars, int Difficulty, char* h
     
     // Close socket
     close(comm_sock);
-    free(fp);
+    fclose(fp);
     printf("closing socket ... \n");
     return 0;
 }
@@ -199,7 +200,7 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
         if (destination_x == initial_x && destination_y == initial_y) {
             // Send "east" repeatedly so that avatar does not move
             if (sendMsg(comm_sock, AvatarID, 3)) {
-                printf("%d Initial move sent successfully\n", AvatarID);
+                // printf("%d Initial move sent successfully\n", AvatarID);
             } else {
                 fprintf(stderr, "Initial move did not send successfully\n");
             }
@@ -252,7 +253,7 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
                 if (last_dir == righthand) {
                     last_dir = direction;
                     if (sendMsg(comm_sock, AvatarID, direction)) {
-                        printf("Move sent successfully with direction %d by avatar %d\n", direction, AvatarID);
+                        // printf("Move sent successfully with direction %d by avatar %d\n", direction, AvatarID);
                     } else {
                         fprintf(stderr, "Move with direction %d not sent successfully\n", direction);
                     } 
@@ -265,13 +266,13 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
                     rotateLeft();
                     last_dir = righthand;
                     if (sendMsg(comm_sock, AvatarID, righthand)) {
-                        printf("Move sent successfully with direction %d by avatar %d\n", righthand, AvatarID);
+                        // printf("Move sent successfully with direction %d by avatar %d\n", righthand, AvatarID);
                         
                     } else {
                         fprintf(stderr, "Move with direction %d not sent successfully\n", righthand);
                     } 
                 }
-                printf("x: %d y: %d\n", ntohl(curr.x), ntohl(curr.y));
+                // printf("x: %d y: %d\n", ntohl(curr.x), ntohl(curr.y));
 
             // If avatar successfully moved on last move
             } else {
@@ -313,8 +314,8 @@ void avatar_move(maze_t *maze, AM_Message msg, int AvatarID, int nAvatars, int c
             } 
         }
     }
-    system("clear");
-    maze_print(maze);
+    // system("clear");
+    // maze_print(maze);
 }
 
 /**************** rotateRight ****************/
@@ -463,6 +464,7 @@ bool sendMsg(int comm_sock, int avatarID, int direction)
 {
     // 4. write to socket
     AM_Message msg;
+    memset(&msg, 0, sizeof(AM_Message));
     msg.type = htonl(AM_AVATAR_MOVE);
     msg.avatar_move.AvatarId = htonl(avatarID);
     msg.avatar_move.Direction = htonl(direction); 
