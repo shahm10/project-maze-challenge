@@ -151,7 +151,8 @@ int avatar_new(maze_t *maze, int AvatarID, int nAvatars, int Difficulty, char* h
         fprintf(fp, "Maze is solved!\n");
 
     } else {
-        fprintf(stdout, "maze not solved \n");
+        fprintf(stdout, "Maze not solved \n");
+        fprintf(fp, "Received unexpected message from server - Maze not solved\n");
     }
     
     // Close socket
