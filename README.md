@@ -15,7 +15,7 @@ To build, run `make`.
 To clean up, run `make clean`.
 
 ### Assumptions:
-    Before running the code, should type `mkdir results` 
+    Before running the code, should type `mkdir Results` 
     Further assumptions written in DESIGN.md
 
 *Please replace this text with any comments you have about the overall project.*
