@@ -71,6 +71,11 @@ void rotateLeft(void);
  */
 void updateWall(maze_t *maze, XYPos curr);
 
+void updateAvatar(maze_t *maze, XYPos curr);
+
+void removeAvatar(maze_t *maze, XYPos prev);
+
+
 /**************** checkWall ****************/
 /* Checks if a wall exists given current position and
  * desired direction
