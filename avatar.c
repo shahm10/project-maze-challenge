@@ -154,6 +154,7 @@ int avatar_new(maze_t *maze, int AvatarID, int nAvatars, int Difficulty, char* h
     // Prints when server returns maze solved message
     if (ntohl(turn_msg.type) == AM_MAZE_SOLVED) {
         printf("Avatars found each other!\n");
+        fprintf(fp, "Maze is solved!\n");
     } else {
         printf("maze not solved \n");
     }
