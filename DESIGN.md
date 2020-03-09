@@ -203,12 +203,59 @@ void maze_print(maze_t* mz);
 #### Pseudo Code: Pseudo code description of the module.
 1. Be initialized by the AM_Startup and connect to the server at the MazePort.
 2. Send an `AM_AVATAR_READY` message to the server and wait for an `AM_AVATAR_TURN` message back that contains the position and TurnID.
-3. Wait for turn to move. Receive updated `AM_AVATAR_TURN` whilst waiting.
-4. Sends `AM_AVATAR_MOVE` to the server specifying what direction it wants to move.
-5. Continue in wait and moving pattern, logging progress, until:
-    1. One of the avatar's connections is broken
-    2. Exceed the maximum number of moves (determined by `AM_MAX_MOVES` and Difficulty)
-    3. Server's `AM_WAIT_TIME` timer expires
-    4. The server determines that all of the Avatars are located at the same (x, y) position
-6. If received, write `AM_MAZE_SOLVED` message is written into log file once. Otherwise, log any success/progress after each action/non-action.
-7. Close files, free memory, exit.
+3. While server is still sending `AM_AVATAR_TURN`
+	4. On initial move, orient avatar east and try moving "right" (south)
+	5. If avatar runs into a wall
+		6. If last move was an attempt to move "right", try moving forward
+		7. If last move was an attempt to move forward, rotate avatar's directions 90 degrees counterclockwise and attempt to move to avatar's new "right"
+	6. If avatar successfully moves right
+		7. Rotate avatar's directions 90 degrees clockwise so it is now facing its previous "right"
+		8. Attempt to move "right"
+	7. Sends `AM_AVATAR_MOVE` to the server specifying what direction it wants to move.
+	8. Continue in wait and moving pattern, logging progress, until:
+		9. One of the avatar's connections is broken
+		10. Exceed the maximum number of moves (determined by `AM_MAX_MOVES` and Difficulty)
+		11. Server's `AM_WAIT_TIME` timer expires
+4. The server determines that all of the Avatars are located at the same (x, y) position
+5. If received, write `AM_MAZE_SOLVED` message is written into log file once. Otherwise, log any success/progress after each action/non-action.
+6. Close files, free memory, exit.
+
+#### Exit Status for *AMSTARTUP*:
+Exit 1: "Avatars should be greater than 1 and less than the AM_MAX_AVATAR"
+
+Exit 2: "Difficulty should be greater than 0 and less than 9"
+
+Exit 3: Error in opening a socket
+
+Exit 4: If the hostanme is unknown
+
+Exit 5: Error connecting to stream socket
+
+Exit 6: Error sending the AM_INIT message to the server
+
+Exit 7: Error receiving the message
+
+Exit 8: Error closign the connection
+
+Exit 9: Error creating a log file
+
+Exit 10: Error creating a thread
+
+Exit 11: error initializing the message
+
+
+#### Exit Status for *Avatar*
+
+Exit 2: Error opening a socket
+
+Exit 3: Error identifying the host
+
+Exit 4: Error sending a message
+
+Exit 5: Error opening a log file
+
+Exit 6: Error receiving the message
+
+Exit 7: Error closing the connection 
+
+

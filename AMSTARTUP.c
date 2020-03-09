@@ -88,7 +88,7 @@ main(const int argc, char *argv[])
   int comm_sock = socket(AF_INET, SOCK_STREAM, 0);
   if (comm_sock < 0) {
     perror("opening socket");
-    exit(2);
+    exit(3);
   }
 
   // 2. Initialize the fields of the server address
@@ -99,14 +99,14 @@ main(const int argc, char *argv[])
   struct hostent *hostp = gethostbyname(hostname); // server hostname
   if (hostp == NULL) {
     fprintf(stderr, "%s: unknown host '%s'\n", program, hostname);
-    exit(3);
+    exit(4);
   }  
   memcpy(&server.sin_addr, hostp->h_addr_list[0], hostp->h_length);
 
   // 3. Connect the socket to that server   
   if (connect(comm_sock, (struct sockaddr *) &server, sizeof(server)) < 0) {
     perror("connecting stream socket");
-    exit(4);
+    exit(5);
   }
   printf("Connected!\n");
 
@@ -121,7 +121,7 @@ main(const int argc, char *argv[])
   send(comm_sock, &msg, sizeof(AM_Message), 0);
   if (send(comm_sock, &msg, sizeof(AM_Message), 0) == -1) {
     fprintf (stderr, "Error: can't send message\n");
-    exit (5);
+    exit (6);
   }
 
   //receive message AM_INIT OK
@@ -130,13 +130,13 @@ main(const int argc, char *argv[])
   receive = recv(comm_sock, &servermsg, sizeof(AM_Message), 0);
   if (receive < 0) {
     fprintf (stderr, "Error: cannot receive message\n");
-    exit (6);
+    exit (7);
   }
   
   //Checking if the connection is closed
   if (receive == 0) {
     fprintf (stderr, "Error: connection closed\n");
-    exit (7);
+    exit (8);
   }
   printf ("Server connected\n");
 
@@ -154,7 +154,7 @@ main(const int argc, char *argv[])
     fp = fopen (logname, "w");
     if (fp == NULL) {
       fprintf (stderr, "Error: cannot create log file \n");
-      exit (5);
+      exit (9);
     }
     printf("Log file created!\n");
     
@@ -178,7 +178,7 @@ main(const int argc, char *argv[])
     int check = pthread_create(&arraythread[i], NULL, initiate_avatar, (void *) (intptr_t) i);
     if (check) {
       fprintf (stderr, "thread not created \n");
-      exit (3);
+      exit (10);
     }
 
   }
@@ -191,7 +191,7 @@ main(const int argc, char *argv[])
     fprintf (stderr, "\nInitialization failed.\n");
     //need to clean up and free everything
     close(comm_sock);
-    exit (5);
+    exit (11);
   }  
 
   // Delete map
