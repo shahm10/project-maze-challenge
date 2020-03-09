@@ -219,3 +219,43 @@ void maze_print(maze_t* mz);
 4. The server determines that all of the Avatars are located at the same (x, y) position
 5. If received, write `AM_MAZE_SOLVED` message is written into log file once. Otherwise, log any success/progress after each action/non-action.
 6. Close files, free memory, exit.
+
+#### Exit Status for *AMSTARTUP*:
+Exit 1: "Avatars should be greater than 1 and less than the AM_MAX_AVATAR"
+
+Exit 2: "Difficulty should be greater than 0 and less than 9"
+
+Exit 3: Error in opening a socket
+
+Exit 4: If the hostanme is unknown
+
+Exit 5: Error connecting to stream socket
+
+Exit 6: Error sending the AM_INIT message to the server
+
+Exit 7: Error receiving the message
+
+Exit 8: Error closign the connection
+
+Exit 9: Error creating a log file
+
+Exit 10: Error creating a thread
+
+Exit 11: error initializing the message
+
+
+#### Exit Status for *Avatar*
+
+Exit 2: Error opening a socket
+
+Exit 3: Error identifying the host
+
+Exit 4: Error sending a message
+
+Exit 5: Error opening a log file
+
+Exit 6: Error receiving the message
+
+Exit 7: Error closing the connection 
+
+
