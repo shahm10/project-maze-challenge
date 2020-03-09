@@ -140,7 +140,7 @@ main(const int argc, char *argv[])
     // 5. Create the log file 
     FILE *fp;
     char *user = getenv ("USER");
-    sprintf (logname, "Amazing_%s_%d_%d.log", user, nAvatars, difficulty);
+    sprintf (logname, "./Results/Amazing_%s_%d_%d.log", user, nAvatars, difficulty);
 
     fp = fopen (logname, "w");
     if (fp == NULL) {

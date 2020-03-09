@@ -376,12 +376,14 @@ void updateWall(maze_t *maze, XYPos curr) {
 
 }
 
+/************ updateAvatar() ************/
 void updateAvatar(maze_t *maze, XYPos curr) {
     int col = ntohl(curr.x) * 2 + 1;
     int row = ntohl(curr.y) * 2 + 1;
     setObj(maze, row, col, 5);
 }
 
+/************ removeAvatar() ************/
 void removeAvatar(maze_t *maze, XYPos prev) {
     int col = ntohl(prev.x) * 2 + 1;
     int row = ntohl(prev.y) * 2 + 1;
