@@ -1,14 +1,20 @@
 /* 
- * inclient - an example Internet client.
+ * AMSTARTUP.c - a startup c program to handle 
+ *  nAvatars
+ *  Difficulty
+ *  Hostname
  *
- * Makes a connection to the given host/port and sends a message 
- * to that socket.
+ * Construct and send the AM_INIT message to the server. Create
+ *  a log file with the name Amazing_$USER_N_D.log
+ *  Start the N copies of the Avatar client (as threads)
  * 
- * usage: inclient hostname port
+ * usage: ./AMSTARTUP flume.cs.dartmouth.edu N D
  * 
- * David Kotz, 1987, 1992, 2016
+ * Assumption: Has to input hostname, nAvatars, and difficulty in this order. 
+ * 
+ * Author: Team LEPC, 2020
+ * 
  * Adapted from Figure 7a in Introductory 4.3bsd IPC, PS1:7-15.
- *
  * updated by Xia Zhou, August 2016, 2017, 2018
  * updated by Temi Prioleau, 2020
  */
@@ -44,6 +50,7 @@
   maze_t *maze; // map to be shared by all the avatars
 
 
+/**************** helper function *********/
 void* initiate_avatar(void* id_num_pointer);
 
 /**************** main() ****************/
@@ -57,19 +64,22 @@ main(const int argc, char *argv[])
     fprintf(stderr, "usage: %s hostname nAvatars difficulty \n", program);
     exit(1);
   } else {
+    //Store each values to the variables
     hostname = argv[1];
     nAvatars = atoi(argv[2]);
     difficulty = atoi(argv[3]);
     port = atoi(AM_SERVER_PORT);// assigned from var in amazing.h
-    //Need to include check conditions for nAvatars and difficulty to be an ingteger
 
   }
+  //Checking conditions for nAvatars and difficulty 
+  //They have to integers
+
   if (nAvatars < 1 || nAvatars > AM_MAX_AVATAR) {
     fprintf (stderr, "Avatars should be greater than 1 and less than %d\n", AM_MAX_AVATAR);
     exit (1);
   }
   
-  if (difficulty < 0 || difficulty > AM_MAX_DIFFICULTY) {
+  if (difficulty > AM_MAX_DIFFICULTY) {
     fprintf (stderr, "Difficulty should be greater than 0 and less than 9\n");
     exit (2);
   }
@@ -101,9 +111,6 @@ main(const int argc, char *argv[])
   printf("Connected!\n");
 
   // 4. Read content from stdin (file descriptor = 0) and write to socket
-  // char buf[BUFSIZE];    // a buffer for reading data from stdin
-  // int bytes_read;       // #bytes read from socket
-  // memset(buf, 0, BUFSIZE); // clear up the buffer
   AM_Message msg;
   memset(&msg, 0, sizeof(AM_Message));
   msg.type = htonl(AM_INIT);
@@ -125,13 +132,15 @@ main(const int argc, char *argv[])
     fprintf (stderr, "Error: cannot receive message\n");
     exit (6);
   }
-
+  
+  //Checking if the connection is closed
   if (receive == 0) {
     fprintf (stderr, "Error: connection closed\n");
     exit (7);
   }
   printf ("Server connected\n");
 
+  //Save the received messages to mazeport, mazewidth, mazeheight
   if (ntohl (servermsg.type) == AM_INIT_OK) {
     mazeport =  ntohl(servermsg.init_ok.MazePort);
     mazewidth = ntohl(servermsg.init_ok.MazeWidth);
@@ -163,7 +172,7 @@ main(const int argc, char *argv[])
   // Initialize map that will be shared by all avatars
   maze = maze_new(mazewidth, mazeheight);
 
-  //     6. Need to initiate the avatars & start up N threads 
+  //6. Need to initiate the avatars & start up N threads 
   pthread_t arraythread[nAvatars];
   for (int i = 0; i < nAvatars; i++) {
     int check = pthread_create(&arraythread[i], NULL, initiate_avatar, (void *) (intptr_t) i);
@@ -175,9 +184,9 @@ main(const int argc, char *argv[])
   }
   for (int j = 0; j < nAvatars; j++) {
     pthread_join (arraythread[j], NULL);
-    //can change the NULL to exit status later
   }
 
+  //Checking if the initialization is failed
   if (ntohl (servermsg.type) == AM_INIT_FAILED) {
     fprintf (stderr, "\nInitialization failed.\n");
     //need to clean up and free everything
@@ -186,13 +195,16 @@ main(const int argc, char *argv[])
   }  
 
   // Delete map
+  // Free memory
   maze_delete(maze);
 
+  //close the socket
   close(comm_sock);
   return 0;
 
 }
 
+//Helper function for creating the thread
 void* initiate_avatar(void* arg)
 {
 
@@ -200,7 +212,6 @@ void* initiate_avatar(void* arg)
   int id_num = (int) (intptr_t) arg;
   // Start new avatar
   avatar_new(maze, id_num, nAvatars, difficulty, hostname, mazeport, mazeheight, mazewidth, logname);
-  // printf("initiated avatar \n");
 
   return NULL;
 }
