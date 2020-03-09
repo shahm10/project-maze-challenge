@@ -55,6 +55,8 @@ maze_t *maze_new(const int width, const int height)
 
     // Allocate memory for 2D Array of Objects
     mz->grid = malloc(mz->height * sizeof(*mz->grid));
+    
+    // mz->grid = malloc(sizeof(*mz->grid));
     for (int i = 0; i < mz->height; i++) {
         mz->grid[i] = malloc(mz->width*sizeof(object_t**));
     }
@@ -184,26 +186,26 @@ void maze_delete(maze_t *mz)
 // Maze printing function
 void maze_print(maze_t* mz)
 {   
-    // Print column numbers above maze
-    printf(" ");
-    for (int i = 0; i < mz->width; i++) {
-        if (i % 2 != 0) {
-            printf("%d", (i-1)/2);
-        } else {
-            printf(" ");
-        }
-    }
-    printf("\n");
+    // // Print column numbers above maze
+    // printf(" ");
+    // for (int i = 0; i < mz->width; i++) {
+    //     if (i % 2 != 0) {
+    //         printf("%d", (i-1)/2);
+    //     } else {
+    //         printf(" ");
+    //     }
+    // }
+    // printf("\n");
 
     // Iterate through entire 2D array
     for (int i = 0; i < mz->height; i++) {
         
-        // Prints row numbers to the left of maze's first column
-        if (i % 2 != 0) {
-            printf("%d", (i-1)/2);
-        } else {
-            printf(" ");
-        }
+        // // Prints row numbers to the left of maze's first column
+        // if (i % 2 != 0) {
+        //     printf("%d", (i-1)/2);
+        // } else {
+        //     printf(" ");
+        // }
 
         for (int j = 0; j < mz->width; j++) {
         
@@ -227,9 +229,14 @@ void maze_print(maze_t* mz)
             if (getTile(mz, i, j) == 4) {
                 printf("+");
             }
+
+            // 5 is an avatar
+            if (getTile(mz, i, j) == 5 ) {
+                printf("A");
+            }
         }
         // Move onto the next row
         printf("\n");
     }
-    printf("maze width: %d, height: %d\n", mz->width, mz->height);
+    // printf("maze width: %d, height: %d\n", getMazeWidth(mz), getMazeHeight(mz));
 }

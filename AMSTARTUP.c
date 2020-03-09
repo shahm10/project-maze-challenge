@@ -132,20 +132,13 @@ main(const int argc, char *argv[])
   }
   printf ("Server connected\n");
 
-  printf("Type: %d \n", servermsg.type);
-
   if (ntohl (servermsg.type) == AM_INIT_OK) {
     printf ("AM_INIT successfully processed\n");
     mazeport =  ntohl(servermsg.init_ok.MazePort);
     mazewidth = ntohl(servermsg.init_ok.MazeWidth);
     mazeheight = ntohl(servermsg.init_ok.MazeHeight);
 
-    //Just to check if it is connected
-    printf ("%d\n", mazeport);
-    printf ("%d\n", mazewidth);
-    printf ("%d\n", mazeheight);
-
-      // 5. Create the log file 
+    // 5. Create the log file 
     FILE *fp;
     char *user = getenv ("USER");
     sprintf (logname, "Amazing_%s_%d_%d.log", user, nAvatars, difficulty);
@@ -184,10 +177,8 @@ maze = maze_new(mazewidth, mazeheight);
   }
   for (int j = 0; j < nAvatars; j++) {
     pthread_join (arraythread[j], NULL);
-      printf("iteration %d\n", j);
     //can change the NULL to exit status later
   }
-  printf("havent closed comm_sock yet\n");
 
   if (ntohl (servermsg.type) == AM_INIT_FAILED) {
     fprintf (stderr, "\nInitialization failed.\n");
@@ -199,10 +190,7 @@ maze = maze_new(mazewidth, mazeheight);
   // Delete map
   maze_delete(maze);
 
-  printf("havent closed comm_sock yet\n");
   close(comm_sock);
-
-
   return 0;
 
 }
@@ -215,7 +203,7 @@ void* initiate_avatar(void* arg)
   // Start new avatar
   printf("%s\n", logname);
   avatar_new(maze, id_num, nAvatars, difficulty, hostname, mazeport, mazeheight, mazewidth, logname);
-  printf("initiated avatar \n");
+  // printf("initiated avatar \n");
 
   return NULL;
 }
