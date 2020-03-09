@@ -178,6 +178,7 @@ void maze_delete(maze_t *mz)
         free(mz->grid[i]);
     }
 
+    free(mz->grid);
     // Free the maze struct itself
     free(mz);
     
