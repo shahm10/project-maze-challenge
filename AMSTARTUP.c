@@ -79,7 +79,7 @@ main(const int argc, char *argv[])
     exit (1);
   }
   
-  if (difficulty < 0 || difficulty > AM_MAX_DIFFICULTY) {
+  if (difficulty > AM_MAX_DIFFICULTY) {
     fprintf (stderr, "Difficulty should be greater than 0 and less than 9\n");
     exit (2);
   }

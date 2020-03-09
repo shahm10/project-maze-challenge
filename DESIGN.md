@@ -5,8 +5,16 @@
 **AM_Startup** is the startup script for the Amazing Maze Challenge. It takes in the parameters for the number of avatars, the difficulty of the maze, and the hostname of the server. It initiates the different avatar programs and their corresponding threads, creating the client server communication.
 
 #### Input: Any inputs to the module
-- nAvatars: (int) the number of Avatars in the maze
-- Difficulty: (int) the difficulty level, on the scale 0 (easy) to 9 (excruciatingly difficult)
+
+##### command input:
+	./AMSTARTUP flume.cs.dartmouth.edu [nAvatars] [Difficulty]
+##### example command input:
+	./AMSTARTUP flume.cs.dartmouth.edu 2 2
+##### Assumption:
+The input has to be in such order: `./AMSTARTUP flume.cs.dartmouth.edu [nAvatars] [Difficulty]` else, it will not run properly.
+	
+- nAvatars: (int) the number of Avatars in the maze. Required to be an integer.
+- Difficulty: (int) the difficulty level, on the scale 0 (easy) to 9 (excruciatingly difficult). Required to be an integer.
 - Hostname: (char \*) the hostname of the server. Our server will be running on *flume.cs.dartmouth.edu* and using port 17235.
 
 * `AM_INIT_OK` which means the message was successfully processed. Provides a TCP/IP number that allow Avatars to communicate.
@@ -18,7 +26,7 @@
 #### Output: Any outputs of the module
 *AM_INIT  nAvatars	Difficulty* is the initial message sent to the server. This is the first step in starting a new maze game.
 
-The startup also creates the logfile that will be written into by the avatars and used to produce the GUI.
+*AM_STARTUP* The AMSTARTUP creates the logfile that will be written into by the avatars and used to produce the GUI. It will produce a log file with the name Amazing_$USER_N_D.log. $USER is the current user id, N is the number of Avatars, and D is the difficulty level. 
 
 #### Data Flow: Any data flow through the module
 Input for the parameters from the user are passed onto the server. Upon successful initiation, it creates a log file. The server returns a message to the startup client - including the maze port - and startup then initiates Avatar clients. 
@@ -59,6 +67,7 @@ References for these structs:
 4. Create a new logfile with the name `Amazing_$USER_N_D.log` when *$USER* is current userid, *N* is the number of avatars, and *D* is the difficulty.
 5. Start up Avatar clients (including the server threads/processes) for the specified number *nAvatars*, each connecting to the specified MazePort.
 6. Wait for maze to end.
+7. Free the necessary variables
 
 ### Avatar Program Design Spec
 The **Avatar Program** is the client that communicates with the server. It uses a custom struct to store its own coordinates and determines its next moves based off the information it receives from the server.
@@ -102,6 +111,93 @@ typedef struct XYPos
     uint32_t x;
     uint32_t y;
 } XYPos;
+```
+It also uses the data strcture `maze` and `object` as defined by `maze.h` and `object.h`. 
+
+`object.h` defines a blank tile, horizontal wall, vertical wall, or corner. The objects will be placed in a 2D array to represent the maze, which will be shared by all avatars. 
+
+Object types:
+
+1 is a blank tile
+2 is a horizontal wall
+3 is a vertical wall
+4 is a corner
+5 is an avatar
+
+```
+typedef struct object object_t;
+
+/* Initialize a new object and allocate memory */
+object_t *object_new(void);
+
+/* Returns the type of a desired object */
+int getType(object_t *obj);
+
+/* Helper functions to set the type of 
+ * the object to a tile, wal, or corner.
+ */
+void setTile(object_t *obj);
+
+void setHWall(object_t *obj);
+
+void setVWall(object_t *obj);
+
+void setCorner(object_t *obj);
+
+void setAvatar(object_t *obj);
+
+/* Function to delete object and free its memory */
+void object_delete(object_t *obj);
+``` 
+
+`maze.h` contains a 2D array of objects that will be shared and updated by all the avatars. The avatar will make use of this maze to update walls and check for any existing walls. 
+
+```
+typedef struct maze maze_t;
+
+/**************** maze_new ****************/
+/* Create a new maze and initialize array
+ *
+ * Caller provides:
+ *   width and height of maze
+ * We return:
+ *   the maze after initialization
+ * We do:
+ *   Allocate memory for the maze
+ *   Initialize 2D Array 
+ *   Initialize outer edges of the array
+ */
+maze_t *maze_new(const int width, const int height);
+
+/**************** getTile ****************/
+/* Returns the integer type of a desired tile
+ *
+ * Caller provides:
+ *   maze and X Y position of desired tile
+ * We return:
+ *   integer type of the desired tile
+ */
+int getTile(maze_t *mz, int x, int y);
+
+/**************** setObj ****************/
+/* Sets the integer type of a desired tile
+ *
+ * Caller provides:
+ *   maze, X Y position of desired tile, and desired type
+ * We do:
+ *   Set tile in the 2D array to desired type
+ */
+void setObj(maze_t *mz, int x, int y, int type);
+
+/* Helper functions to get maze's width and height */
+int getMazeWidth(maze_t *mz);
+
+int getMazeHeight(maze_t *mz);
+
+/* Helper functions to delete and print the maze */
+void maze_delete(maze_t *mz);
+
+void maze_print(maze_t* mz);
 ```
 
 #### Pseudo Code: Pseudo code description of the module.
