@@ -24,7 +24,7 @@ The input has to be in such order: `./AMSTARTUP flume.cs.dartmouth.edu [nAvatars
 * `AM_SERVER_OUT_OF_MEM` which means the server cannot allocatew enough memory to serve a maze. The server will abort and die.
 
 #### Output: Any outputs of the module
-*AM_INIT  nAvatars	Difficulty* is the initial message sent to the server. This is the first step in starting a new maze game.
+*AM_INIT  nAvatars  Difficulty* is the initial message sent to the server. This is the first step in starting a new maze game.
 
 *AM_STARTUP* The AMSTARTUP creates the logfile that will be written into by the avatars and used to produce the GUI. It will produce a log file with the name Amazing_$USER_N_D.log. $USER is the current user id, N is the number of Avatars, and D is the difficulty level. 
 
@@ -118,13 +118,13 @@ It also uses the data strcture `maze` and `object` as defined by `maze.h` and `o
 
 Object types:
 
-1 is a blank tile
-2 is a horizontal wall
-3 is a vertical wall
-4 is a corner
-5 is an avatar
+* 1 is a blank tile
+* 2 is a horizontal wall
+* 3 is a vertical wall
+* 4 is a corner
+* 5 is an avatar
 
-```
+```c
 typedef struct object object_t;
 
 /* Initialize a new object and allocate memory */
@@ -149,113 +149,68 @@ void setAvatar(object_t *obj);
 /* Function to delete object and free its memory */
 void object_delete(object_t *obj);
 ``` 
+See object.h for in-depth descriptions of these functions.
 
 `maze.h` contains a 2D array of objects that will be shared and updated by all the avatars. The avatar will make use of this maze to update walls and check for any existing walls. 
 
-```
+```c
 typedef struct maze maze_t;
 
-/**************** maze_new ****************/
-/* Create a new maze and initialize array
- *
- * Caller provides:
- *   width and height of maze
- * We return:
- *   the maze after initialization
- * We do:
- *   Allocate memory for the maze
- *   Initialize 2D Array 
- *   Initialize outer edges of the array
- */
 maze_t *maze_new(const int width, const int height);
 
-/**************** getTile ****************/
-/* Returns the integer type of a desired tile
- *
- * Caller provides:
- *   maze and X Y position of desired tile
- * We return:
- *   integer type of the desired tile
- */
 int getTile(maze_t *mz, int x, int y);
 
-/**************** setObj ****************/
-/* Sets the integer type of a desired tile
- *
- * Caller provides:
- *   maze, X Y position of desired tile, and desired type
- * We do:
- *   Set tile in the 2D array to desired type
- */
 void setObj(maze_t *mz, int x, int y, int type);
 
-/* Helper functions to get maze's width and height */
 int getMazeWidth(maze_t *mz);
 
 int getMazeHeight(maze_t *mz);
 
-/* Helper functions to delete and print the maze */
 void maze_delete(maze_t *mz);
 
 void maze_print(maze_t* mz);
 ```
 
+See maze.ch for in-depth descriptions of these functions.
+
 #### Pseudo Code: Pseudo code description of the module.
 1. Be initialized by the AM_Startup and connect to the server at the MazePort.
 2. Send an `AM_AVATAR_READY` message to the server and wait for an `AM_AVATAR_TURN` message back that contains the position and TurnID.
 3. While server is still sending `AM_AVATAR_TURN`
-	4. On initial move, orient avatar east and try moving "right" (south)
-	5. If avatar runs into a wall
-		6. If last move was an attempt to move "right", try moving forward
-		7. If last move was an attempt to move forward, rotate avatar's directions 90 degrees counterclockwise and attempt to move to avatar's new "right"
-	6. If avatar successfully moves right
-		7. Rotate avatar's directions 90 degrees clockwise so it is now facing its previous "right"
-		8. Attempt to move "right"
-	7. Sends `AM_AVATAR_MOVE` to the server specifying what direction it wants to move.
-	8. Continue in wait and moving pattern, logging progress, until:
-		9. One of the avatar's connections is broken
-		10. Exceed the maximum number of moves (determined by `AM_MAX_MOVES` and Difficulty)
-		11. Server's `AM_WAIT_TIME` timer expires
+	1. On initial move, orient avatar east and try moving "right" (south)
+	2. If avatar runs into a wall
+		1. If last move was an attempt to move "right", try moving forward
+		2. If last move was an attempt to move forward, rotate avatar's directions 90 degrees counterclockwise and attempt to move to avatar's new "right"
+	3. If avatar successfully moves right
+		1. Rotate avatar's directions 90 degrees clockwise so it is now facing its previous "right"
+		2. Attempt to move "right"
+	4. Sends `AM_AVATAR_MOVE` to the server specifying what direction it wants to move.
+	5. Continue in wait and moving pattern, logging progress, until:
+		1. One of the avatar's connections is broken
+		2. Exceed the maximum number of moves (determined by `AM_MAX_MOVES` and Difficulty)
+		3. Server's `AM_WAIT_TIME` timer expires
 4. The server determines that all of the Avatars are located at the same (x, y) position
 5. If received, write `AM_MAZE_SOLVED` message is written into log file once. Otherwise, log any success/progress after each action/non-action.
 6. Close files, free memory, exit.
 
 #### Exit Status for *AMSTARTUP*:
-Exit 1: "Avatars should be greater than 1 and less than the AM_MAX_AVATAR"
-
-Exit 2: "Difficulty should be greater than 0 and less than 9"
-
-Exit 3: Error in opening a socket
-
-Exit 4: If the hostanme is unknown
-
-Exit 5: Error connecting to stream socket
-
-Exit 6: Error sending the AM_INIT message to the server
-
-Exit 7: Error receiving the message
-
-Exit 8: Error closign the connection
-
-Exit 9: Error creating a log file
-
-Exit 10: Error creating a thread
-
-Exit 11: error initializing the message
-
+* Exit 1: "Avatars should be greater than 1 and less than the AM_MAX_AVATAR"
+* Exit 2: "Difficulty should be greater than 0 and less than 9"
+* Exit 3: Error in opening a socket
+* Exit 4: If the hostanme is unknown
+* Exit 5: Error connecting to stream socket
+* Exit 6: Error sending the AM_INIT message to the server
+* Exit 7: Error receiving the message
+* Exit 8: Error closign the connection
+* Exit 9: Error creating a log file
+* Exit 10: Error creating a thread
+* Exit 11: error initializing the message
 
 #### Exit Status for *Avatar*
 
-Exit 2: Error opening a socket
-
-Exit 3: Error identifying the host
-
-Exit 4: Error sending a message
-
-Exit 5: Error opening a log file
-
-Exit 6: Error receiving the message
-
-Exit 7: Error closing the connection 
-
-
+* Exit 2: Error opening a socket
+* Exit 3: Error identifying the host
+* Exit 4: Error sending a message
+* Exit 5: Error opening a log file
+* Exit 6: Error receiving the message
+* Exit 7: Error closing the connection
