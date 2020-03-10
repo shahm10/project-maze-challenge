@@ -11,7 +11,7 @@ GitHub usernames:
 @shahm10
 
 To build, run `make`.
-
+To test, run `make test`. (See `TESTING.md`.)
 To clean up, run `make clean`.
 
 ### Organization
