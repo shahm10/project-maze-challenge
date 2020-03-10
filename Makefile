@@ -28,6 +28,10 @@ object.o: object.h
 
 maze.o: maze.h
 
+test:
+	mkdir Results
+	chmod +x testing.sh
+	./testing.sh
 
 clean:
 	rm -rf *~ *.o *.dSYM
