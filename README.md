@@ -14,6 +14,11 @@ To build, run `make`.
 
 To clean up, run `make clean`.
 
+### Organization
+See `TESTING.md` for directions on testing.
+See `DESIGN.md` for information on how we designed our maze.
+See the Results directory for past successful runs of tests.
+
 ### Assumptions:
 Before running the code, make sure to read the `TESTING.md` that will instruct you on how to make sure that the `Results` directory is made to store log files.
 
