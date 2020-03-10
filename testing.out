@@ -1,0 +1,21 @@
+# mkdir Results
+chmod +x testing.sh
+./testing.sh
+Testing for Amazing Maze
+One argument
+usage: ./AMSTARTUP hostname nAvatars difficulty 
+Two arguments
+usage: ./AMSTARTUP hostname nAvatars difficulty 
+Three arguments
+usage: ./AMSTARTUP hostname nAvatars difficulty 
+Invalid Number of Avatars (Too Low)
+Avatars should be greater than 1 and less than 10
+Invalid Number of Avatars (Too High)
+Avatars should be greater than 1 and less than 10
+Invalid Difficulty (Too Low)
+Difficulty should be greater than 0 and less than 9
+Invalid Difficulty (Too High)
+Difficulty should be greater than 0 and less than 9
+Invalid Hostname
+./AMSTARTUP: unknown host 'floom.cs.dartmouth.edu'
+Done with parameter testing

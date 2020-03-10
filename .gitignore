@@ -1,0 +1,6 @@
+*~ 
+*.o 
+*.dSYM
+AMSTARTUP
+gtk-test
+hello-world-gtk.c
