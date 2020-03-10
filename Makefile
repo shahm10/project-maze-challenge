@@ -29,7 +29,8 @@ object.o: object.h
 maze.o: maze.h
 
 test:
-	mkdir Results
+	### Uncomment this line below if you are running the make test for the first time ###
+	# mkdir Results
 	chmod +x testing.sh
 	./testing.sh
 
